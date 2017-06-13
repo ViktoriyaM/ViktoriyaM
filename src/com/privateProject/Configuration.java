@@ -173,7 +173,7 @@ StringBuilder getFilesType()
 }
 
 @Override
-List<String> getScaleValue()
+List<String> getScaleValues()
 {
     scaleValue.clear();
     scaleValue = configurationScaleValue(scaleValue, document, xpath);

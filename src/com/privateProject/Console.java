@@ -2,51 +2,65 @@ package com.privateProject;
 
 import java.util.Scanner;
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class Console implements ConsoleInterface
 {
-private StringBuilder inputScale = null;
+
 private Scanner inputLine = null;
 
 Console()
 {
-    inputScale = new StringBuilder();
     inputLine = new Scanner(System.in);
 }
 
 @Override
-public String readingConsoleData(List<String> scaleValue)
+public String readingConsoleData(List<String> scaleValues)
 {
-    int scaleSize = scaleValue.size() - 1;
-    StringBuilder regularExpression = new StringBuilder();
-    regularExpression.insert(0, "[0-"+scaleSize+"]");
+    String inputScale = null;
+    int scaleSize = scaleValues.size();
+    boolean isNumber = false;
 
     System.out.println("Введите номер, соответствующий масштабу карты, для удаления объектов:");
-    for (int i = 0; i < scaleValue.size(); i++)
+    for (int i = 0; i < scaleSize; i++)
     {
-        System.out.println("- масштаб " + scaleValue.get(i) + " - " + i);
+        System.out.println(i + " - " + "масштаб " + scaleValues.get(i));
     }
-    System.out.println("- выход - quite");
+    System.out.println("q - выход");
 
-    inputScale.delete(0, inputScale.length());
-    inputScale.insert(0, inputLine.nextLine());
+    isNumber = inputLine.hasNextInt();
+    inputScale = inputLine.next();
 
-    boolean matcher = Pattern.matches(regularExpression.toString(), inputScale.toString());
-
-    if (!QUITE.equals(inputScale.toString()) && matcher)
+    //если введено число
+    if (isNumber)
     {
-        return scaleValue.get(Integer.parseInt(inputScale.toString()));
-    }
-    else if (QUITE.equals(inputScale.toString()))
-    {
-        return QUITE;
+        //проверка на нахождение числа в диапазоне
+        if (Integer.parseInt(inputScale) >= 0 && Integer.parseInt(inputScale) < scaleSize)
+        {
+            return scaleValues.get(Integer.parseInt(inputScale));
+        }
+        else
+        {
+            return CONTINUE;
+        }
     }
     else
     {
-        return CONTINUE;
+        if (QUITE.equals(inputScale))
+        {
+            return QUITE;
+        }
+        else
+        {
+            return CONTINUE;
+        }
     }
 
+}
+
+@Override
+public void closeConsole()
+{
+    inputLine.close();
 }
 
 }

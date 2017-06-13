@@ -38,5 +38,5 @@ abstract StringBuilder getFilesPath(String scale);
 
 abstract StringBuilder getFilesType();
         
-abstract List<String> getScaleValue();
+abstract List<String> getScaleValues();
 }

@@ -11,31 +11,31 @@ public class StartMapBuilder
  */
 public static void main(String[] args)
 {
-    StringBuilder scaleSelected = new StringBuilder();
+    String scaleSelected = new String();
     Configuration configuration = new Configuration();
 
-    List<String> scaleValue = configuration.getScaleValue();
+    List<String> scaleValues = configuration.getScaleValues();
     Console console = new Console();
     MapBuilder mapBuilder = new MapBuilder();
 
     boolean condition = true;
 
-    while (!Console.QUITE.equals(scaleSelected.toString()))
+    while (!Console.QUITE.equals(scaleSelected))
     {
-        scaleSelected.delete(0, scaleSelected.length());
-        scaleSelected.insert(0, console.readingConsoleData(scaleValue));
+        scaleSelected = console.readingConsoleData(scaleValues);
 
-        if (!Console.CONTINUE.equals(scaleSelected.toString()) && !Console.QUITE.equals(scaleSelected.toString()))
+        if (!Console.CONTINUE.equals(scaleSelected) && !Console.QUITE.equals(scaleSelected))
         {
-            Set<String> objects = configuration.getObjects(scaleSelected.toString());
-            Set<String> filesNames = configuration.getFilesNames(scaleSelected.toString());
-            StringBuilder filesPath = configuration.getFilesPath(scaleSelected.toString());
+            Set<String> objects = configuration.getObjects(scaleSelected);
+            Set<String> filesNames = configuration.getFilesNames(scaleSelected);
+            StringBuilder filesPath = configuration.getFilesPath(scaleSelected);
             StringBuilder filesType = configuration.getFilesType();
 
-            condition = mapBuilder.mapping(objects, filesNames, filesType, filesPath);
+//            condition = mapBuilder.mapping(objects, filesNames, filesType, filesPath);
         }
     }
 
+    console.closeConsole();
 }
 
 }
