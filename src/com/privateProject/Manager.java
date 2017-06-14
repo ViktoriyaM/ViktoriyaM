@@ -1,20 +1,47 @@
 package com.privateProject;
 
+import java.io.IOException;
 import java.util.Scanner;
 import java.util.List;
+import javax.xml.parsers.ParserConfigurationException;
+import org.xml.sax.SAXException;
 
-public class Console implements ConsoleInterface
+public class Manager implements ManagerInterface
 {
 
 private Scanner inputLine = null;
+Algorithm algorithm = null;
+Configuration configuration = null;
 
-Console()
+Manager() throws ParserConfigurationException, SAXException, IOException
 {
     inputLine = new Scanner(System.in);
+    algorithm = new Algorithm();
+    configuration = Configuration.getInstance();
 }
 
 @Override
-public String readingConsoleData(List<String> scaleValues)
+public void managing() throws ParserConfigurationException, SAXException, IOException
+{
+    String scaleSelected = null;
+    boolean condition = false;
+    List<String> scaleValues = configuration.getScaleValues();
+
+    do
+    {
+        scaleSelected = showMenu(scaleValues);
+        if (!CONTINUE.equals(scaleSelected) && !QUITE.equals(scaleSelected))
+        {
+            condition = algorithm.initialize(scaleSelected);
+        }
+    }
+    while (!QUITE.equals(scaleSelected));
+
+    closeConsole();
+}
+
+@Override
+public String showMenu(List<String> scaleValues)
 {
     String inputScale = null;
     int scaleSize = scaleValues.size();
@@ -28,7 +55,7 @@ public String readingConsoleData(List<String> scaleValues)
     System.out.println("q - выход");
 
     isNumber = inputLine.hasNextInt();
-    inputScale = inputLine.next();
+    inputScale = inputLine.nextLine();
 
     //если введено число
     if (isNumber)

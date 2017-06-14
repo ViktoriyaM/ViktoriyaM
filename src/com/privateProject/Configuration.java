@@ -16,38 +16,56 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public final class Configuration extends ConfigurationAbstract
 {
 
-Configuration()
+private static Configuration instance = null;
+
+private Configuration() throws ParserConfigurationException, SAXException, IOException
 {
-    builderFactory = DocumentBuilderFactory.newInstance();
-    
     objects = new LinkedHashSet<>();
     filesNames = new LinkedHashSet<>();
-    filesPath = new StringBuilder();
-    filesType = new StringBuilder();
-    scaleValue = new ArrayList<>();
+    scaleValues = new ArrayList<>();
+  
+    file = new FileInputStream(new File(DEFAULT_XML_FILENAME));
 
+    builderFactory = DocumentBuilderFactory.newInstance();
+    DocumentBuilder builder = builderFactory.newDocumentBuilder();
+    document = builder.parse(file);
+
+    XPathFactory xpathFactory = XPathFactory.newInstance();
+    xpath = xpathFactory.newXPath();
+
+}
+
+static Configuration getInstance() throws ParserConfigurationException, SAXException, IOException
+{
+    if (instance == null)
+    {
+        instance = new Configuration();
+    }
+
+    return instance;
+}
+
+@Override
+void closeFile()
+{
     try
     {
-        FileInputStream file = new FileInputStream(new File(DEFAULT_XML_FILENAME));
-
-        DocumentBuilder builder = builderFactory.newDocumentBuilder();
-        document = builder.parse(file);
-
-        XPathFactory xpathFactory = XPathFactory.newInstance();
-        xpath = xpathFactory.newXPath();
+        file.close();
     }
-    catch (ParserConfigurationException | SAXException | IOException e)
+    catch (IOException ex)
     {
-        System.out.println(e);
+        Logger.getLogger(Configuration.class.getName()).log(Level.SEVERE, null, ex);
     }
 }
 
 @Override
-protected List<String> configurationScaleValue(List<String> scaleValue, Document document, XPath xpath)
+protected List<String> configurationScaleValues(List<String> scaleValues, Document document, XPath xpath)
 {
     try
     {
@@ -56,7 +74,7 @@ protected List<String> configurationScaleValue(List<String> scaleValue, Document
         NodeList nodeList = (NodeList) xpathExpression.evaluate(document, XPathConstants.NODESET);
         for (int i = 0; i < nodeList.getLength(); i++)
         {
-            scaleValue.add(nodeList.item(i).getAttributes().getNamedItem("scale").getNodeValue());
+            scaleValues.add(nodeList.item(i).getAttributes().getNamedItem("scale").getNodeValue());
         }
 
     }
@@ -65,7 +83,7 @@ protected List<String> configurationScaleValue(List<String> scaleValue, Document
         System.out.println(e);
     }
 
-    return scaleValue;
+    return scaleValues;
 }
 
 @Override
@@ -82,7 +100,9 @@ protected Set<String> configurationObjects(Set<String> objects, Document documen
     {
         System.out.println(e);
     }
+
     return objects;
+
 }
 
 @Override
@@ -103,13 +123,13 @@ protected Set<String> configurationFilesNames(Set<String> filesNames, Document d
 }
 
 @Override
-protected StringBuilder configurationFilesPath(StringBuilder filesPath, Document document, XPath xpath, String scale)
+protected String configurationFilesPath(String filesPath, Document document, XPath xpath, String scale)
 {
     try
     {
         XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale='" + scale + "']/file-path");
 
-        filesPath.insert(0, (String) xpathExpression.evaluate(document, XPathConstants.STRING));
+        filesPath = (String) xpathExpression.evaluate(document, XPathConstants.STRING);
     }
     catch (XPathExpressionException e)
     {
@@ -120,13 +140,13 @@ protected StringBuilder configurationFilesPath(StringBuilder filesPath, Document
 }
 
 @Override
-protected StringBuilder configurationFilesType(StringBuilder filesType, Document document, XPath xpath)
+protected String configurationFilesType(String filesType, Document document, XPath xpath)
 {
     try
     {
         XPathExpression xpathExpression = xpath.compile("/maps/file-type");
 
-        filesType.insert(0, (String) xpathExpression.evaluate(document, XPathConstants.STRING));
+        filesType = (String) xpathExpression.evaluate(document, XPathConstants.STRING);
     }
     catch (XPathExpressionException e)
     {
@@ -155,30 +175,30 @@ Set<String> getFilesNames(String scale)
 }
 
 @Override
-StringBuilder getFilesPath(String scale)
+String getFilesPath(String scale)
 {
-    filesPath.delete(0, filesPath.length());
+    String filesPath = null;
     filesPath = configurationFilesPath(filesPath, document, xpath, scale);
 
     return filesPath;
 }
 
 @Override
-StringBuilder getFilesType()
+String getFilesType()
 {
-    filesType.delete(0, filesType.length());
-    filesPath = configurationFilesType(filesType, document, xpath);
+    String filesType = null;
+    filesType = configurationFilesType(filesType, document, xpath);
 
-    return filesPath;
+    return filesType;
 }
 
 @Override
 List<String> getScaleValues()
 {
-    scaleValue.clear();
-    scaleValue = configurationScaleValue(scaleValue, document, xpath);
+    scaleValues.clear();
+    scaleValues = configurationScaleValues(scaleValues, document, xpath);
 
-    return scaleValue;
+    return scaleValues;
 }
 
 }
