@@ -9,11 +9,13 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashSet;
-import javax.xml.parsers.ParserConfigurationException;
-import org.xml.sax.SAXException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public final class Algorithm extends AlgorithmAbstract
 {
+
+private static final Logger LOGGER = LogManager.getLogger(Algorithm.class.getName());
 
 Algorithm()
 {
@@ -22,18 +24,26 @@ Algorithm()
 }
 
 @Override
-boolean initialize(String scaleSelected) throws ParserConfigurationException, SAXException, IOException
+boolean initialize(Configuration configuration, String scaleSelected)
 {
-    Configuration configuration = Configuration.getInstance();
     objects = configuration.getObjects(scaleSelected);
     filesNames = configuration.getFilesNames(scaleSelected);
     String filesPath = configuration.getFilesPath(scaleSelected);
     String filesType = configuration.getFilesType();
 
+    if (objects.isEmpty() || filesNames.isEmpty() || filesPath == null || filesType == null)
+    {
+        LOGGER.error("Error initialize() " + " " + objects.isEmpty() + " " + filesNames.isEmpty() + " " + filesPath + " " + filesType);
+        return false;
+    }
+    else
+    {
 //    openCloseFile(filesNames, filesType, filesPath);
-    objects.clear();
-    filesNames.clear();
-    return true;
+        objects.clear();
+        filesNames.clear();
+        return true;
+    }
+
 }
 
 @Override

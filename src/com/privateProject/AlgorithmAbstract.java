@@ -2,10 +2,7 @@ package com.privateProject;
 
 import java.io.BufferedReader;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Set;
-import javax.xml.parsers.ParserConfigurationException;
-import org.xml.sax.SAXException;
 
 public abstract class AlgorithmAbstract
 {
@@ -18,7 +15,7 @@ protected static final String IDENTIFICATION_END_FILE = ".END";
 Set<String> objects = null;
 Set<String> filesNames = null;
 
-abstract boolean initialize(String scaleSelected) throws ParserConfigurationException, SAXException, IOException;
+abstract boolean initialize(Configuration configuration, String scaleSelected);
 
 protected abstract void openCloseFile(Set<String> filesNames, String filesPath, String filesType);
 
