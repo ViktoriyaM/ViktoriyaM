@@ -39,15 +39,28 @@ Configuration()
 @Override
 boolean initialize()
 {
+
+    boolean resultInit = initialize(DEFAULT_XML_FILE);
+    return resultInit;
+}
+
+/**
+ * Выполняет загрузку ресурса (XML-документа) для чтения, создает дерево документа из файла,
+ * создает фабрику XPathFactory и использует ее для создания объека XPath.
+ *
+ * @param fileName имя XML-документа
+ *
+ * @return true при успешной загрузке и подключению к файловому ресурсу,
+ *         false - в противном случае
+ */
+@Override
+boolean initialize(String fileName)
+{
+//        file = new File(getClass().getClassLoader().getResource(DEFAULT_XML_FILE).toURI());
+    inputStream = getClass().getClassLoader().getResource(fileName);
+
     try
     {
-//        file = new File(getClass().getClassLoader().getResource(DEFAULT_XML_FILE).toURI());
-        inputStream = getClass().getClassLoader().getResource(DEFAULT_XML_FILE);
-
-//        System.out.println(getClass().getResourceAsStream("/resources/mapProperties.xml"));
-//        System.out.println(getClass().getResource("/resources/mapProperties.xml"));
-//        System.out.println(getClass().getClassLoader().getResource("resources/mapProperties.xml"));
-//        System.out.println(getClass().getClassLoader().getResourceAsStream("resources/mapProperties.xml"));
         builderFactory = DocumentBuilderFactory.newInstance();
         builderFactory.setNamespaceAware(true);
         DocumentBuilder builder = builderFactory.newDocumentBuilder();
@@ -60,7 +73,7 @@ boolean initialize()
 
         return true;
     }
-    catch (IOException | ParserConfigurationException | SAXException | IllegalArgumentException ex)
+    catch (IOException | ParserConfigurationException | SAXException | IllegalArgumentException | NullPointerException ex)
     {
         LOGGER.error("Error initialize() ", ex);
         return false;
@@ -80,6 +93,8 @@ boolean initialize()
 @Override
 protected List<String> configurationScaleValues(List<String> scaleValues, Document document, XPath xpath)
 {
+    scaleValues.clear();
+
     try
     {
         XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale]");
@@ -91,7 +106,7 @@ protected List<String> configurationScaleValues(List<String> scaleValues, Docume
         }
 
     }
-    catch (XPathExpressionException ex)
+    catch (XPathExpressionException | NullPointerException ex)
     {
         LOGGER.error("Error configurationScaleValues() ", ex);
     }
@@ -113,14 +128,20 @@ protected List<String> configurationScaleValues(List<String> scaleValues, Docume
 @Override
 protected Set<String> configurationObjects(Set<String> objects, Document document, XPath xpath, String scale)
 {
+    objects.clear();
 
     try
     {
         XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale='" + scale + "']/delete-objects");
 
-        objects.addAll(Arrays.asList(xpathExpression.evaluate(document, XPathConstants.STRING).toString().split("\n| ")));
+        String objectsString = xpathExpression.evaluate(document, XPathConstants.STRING).toString();
+        if (!("".equals(objectsString)))
+        {
+            objects.addAll(Arrays.asList(objectsString.split("\n| ")));
+            objects.remove("");
+        }
     }
-    catch (XPathExpressionException ex)
+    catch (XPathExpressionException | NullPointerException ex)
     {
         LOGGER.error("Error configurationObjects() ", ex);
     }
@@ -143,13 +164,20 @@ protected Set<String> configurationObjects(Set<String> objects, Document documen
 @Override
 protected Set<String> configurationFilesNames(Set<String> filesNames, Document document, XPath xpath, String scale)
 {
+    filesNames.clear();
+
     try
     {
         XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale='" + scale + "']/file-name");
 
-        filesNames.addAll(Arrays.asList(xpathExpression.evaluate(document, XPathConstants.STRING).toString().split("\t|\n| ")));
+        String filesNamesString = xpathExpression.evaluate(document, XPathConstants.STRING).toString();
+        if (!("".equals(filesNamesString)))
+        {
+            filesNames.addAll(Arrays.asList(filesNamesString.split("\t|\n| ")));
+            filesNames.remove("");
+        }
     }
-    catch (XPathExpressionException ex)
+    catch (XPathExpressionException | NullPointerException ex)
     {
         LOGGER.error("Error configurationFilesNames() ", ex);
     }
@@ -175,9 +203,13 @@ protected String configurationFilesPath(String filesPath, Document document, XPa
     {
         XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale='" + scale + "']/file-path");
 
-        filesPath = (String) xpathExpression.evaluate(document, XPathConstants.STRING);
+        filesPath = xpathExpression.evaluate(document, XPathConstants.STRING).toString();
+        if ("".equals(filesPath))
+        {
+            filesPath = null;
+        }
     }
-    catch (XPathExpressionException ex)
+    catch (XPathExpressionException | NullPointerException ex)
     {
         LOGGER.error("Error configurationFilesPath() ", ex);
     }
@@ -202,9 +234,13 @@ protected String configurationFilesType(String filesType, Document document, XPa
     {
         XPathExpression xpathExpression = xpath.compile("/maps/file-type");
 
-        filesType = (String) xpathExpression.evaluate(document, XPathConstants.STRING);
+        filesType = xpathExpression.evaluate(document, XPathConstants.STRING).toString();
+        if ("".equals(filesType))
+        {
+            filesType = null;
+        }
     }
-    catch (XPathExpressionException ex)
+    catch (XPathExpressionException | NullPointerException ex)
     {
         LOGGER.error("Error configurationFilesType() ", ex);
     }
@@ -213,16 +249,15 @@ protected String configurationFilesType(String filesType, Document document, XPa
 }
 
 /**
- * Возвращает список объектов из XML-файла, соответствующих выбранному значению масштаба.
+ * Возвращает список объектов из XML-документа, соответствующих выбранному значению масштаба.
  *
  * @param scale выбранное пользователем значение масштаба
  *
- * @return список объектов из XML-файла, соответствующих выбранному значению масштаба
+ * @return список объектов из XML-документа, соответствующих выбранному значению масштаба
  */
 @Override
 Set<String> getObjects(String scale)
 {
-    objects.clear();
     objects = configurationObjects(objects, document, xpath, scale);
 
     return objects;
@@ -238,7 +273,6 @@ Set<String> getObjects(String scale)
 @Override
 Set<String> getFilesNames(String scale)
 {
-    filesNames.clear();
     filesNames = configurationFilesNames(filesNames, document, xpath, scale);
 
     return filesNames;
@@ -282,7 +316,6 @@ String getFilesType()
 @Override
 List<String> getScaleValues()
 {
-    scaleValues.clear();
     scaleValues = configurationScaleValues(scaleValues, document, xpath);
 
     return scaleValues;

@@ -31,6 +31,16 @@ protected URL inputStream = null;
 abstract boolean initialize();
 
 /**
+ * Выполняет загрузку ресурса (XML-документа) для чтения, создает дерево документа из файла,
+ * создает фабрику XPathFactory и использует ее для создания объека XPath.
+ *
+ * @param fileName имя XML-документа
+ * @return true при успешной загрузке и подключению к файловому ресурсу,
+ *         false - в противном случае
+ */
+abstract boolean initialize(String fileName);
+
+/**
  * Выполняет компиляцию XPath-выражения и применяет скомпилированный выриант
  * к XML-документу для поиска всех масштабов.
  *
