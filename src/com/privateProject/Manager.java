@@ -12,6 +12,7 @@ public class Manager implements ManagerInterface
 
 private Set<Integer> inputScales = null;
 private Algorithm algorithm = null;
+private FilesManager filesManager = null;
 private Configuration configuration = null;
 private static final Logger LOGGER = LogManager.getLogger(Manager.class.getName());
 
@@ -20,6 +21,7 @@ Manager()
     inputScales = new HashSet<>();
     algorithm = new Algorithm();
     configuration = new Configuration();
+    filesManager = new FilesManager();
 }
 
 /**
@@ -35,7 +37,6 @@ public void managing()
 {
     String scaleSelected = null;
     List<String> scaleValues = null;
-    boolean condition = false;
 
     boolean resultInit = configuration.initialize();
 
@@ -62,12 +63,8 @@ public void managing()
 
                 if (!CONTINUE.equals(scaleSelected) && !QUITE.equals(scaleSelected))
                 {
-                    condition = algorithm.initialize(configuration, scaleSelected);
-
-                    if (!condition)
+                    if (!controlAlgorithm(scaleSelected))
                     {
-                        System.out.println("Ошибка при формировании списка параметров в файле XML");
-                        LOGGER.error("Error building the list of parameters in the XML file");
                         break;
                     }
                 }
@@ -115,7 +112,7 @@ public String showMenu(List<String> scaleValues)
     System.out.println("q - выход");
 
     inputValue = inputValidation(scaleValues, inputLine);
-    
+
     return inputValue;
 }
 
@@ -185,6 +182,47 @@ public String inputValidation(List<String> scaleValues, Scanner inputLine)
             return CONTINUE;
         }
     }
+}
+
+@Override
+public boolean controlAlgorithm(String scaleSelected)
+{
+    boolean isCheckConfiguration = false;
+    boolean isCheckCatalog = false;
+    boolean isCheckReadWriteFile = false;
+    boolean isCheckGetObjects = false;
+
+    isCheckConfiguration = configuration.configurationAllParameters(scaleSelected);
+    if (!isCheckConfiguration)
+    {
+        System.out.println("Ошибка при формировании списка параметров в файле XML");
+        return false;
+    }
+
+    isCheckCatalog = filesManager.initializeCatalog(configuration);
+    if (!isCheckCatalog)
+    {
+        System.out.println("Файл карты не найден: " + filesManager.getPath());
+        return false;
+    }
+
+    isCheckGetObjects = algorithm.getObjects(configuration);
+    if (!isCheckGetObjects)
+    {
+        System.out.println("Ошибка при формировании списка параметров из файла XML");
+        return false;
+    }
+
+    while (filesManager.hasNext())
+    {
+        isCheckReadWriteFile = algorithm.readWriteFile(filesManager);
+        if (!isCheckReadWriteFile)
+        {
+            System.out.println("Файл карты не обработан: " + filesManager.getCurrentFile());
+        }
+    }
+
+    return true;
 }
 
 }

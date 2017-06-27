@@ -9,6 +9,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.*;
 import java.io.IOException;
+import java.io.File;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -17,7 +19,7 @@ import java.util.ArrayList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class Configuration extends ConfigurationAbstract
+final public class Configuration extends ConfigurationAbstract
 {
 
 private static final Logger LOGGER = LogManager.getLogger(Configuration.class.getName());
@@ -30,8 +32,7 @@ Configuration()
 }
 
 /**
- * Выполняет загрузку ресурса (XML-документа) для чтения, создает дерево документа из файла,
- * создает фабрику XPathFactory и использует ее для создания объека XPath.
+ * Выполняет загрузку ресурса по умолчанию (XML-документа) для чтения.
  *
  * @return true при успешной загрузке и подключению к файловому ресурсу,
  *         false - в противном случае
@@ -46,6 +47,7 @@ boolean initialize()
 
 /**
  * Выполняет загрузку ресурса (XML-документа) для чтения, создает дерево документа из файла,
+ * выполняет синтаксический анализ XML-документа, полученного из заданного потока ввода,
  * создает фабрику XPathFactory и использует ее для создания объека XPath.
  *
  * @param fileName имя XML-документа
@@ -56,13 +58,14 @@ boolean initialize()
 @Override
 boolean initialize(String fileName)
 {
-//        file = new File(getClass().getClassLoader().getResource(DEFAULT_XML_FILE).toURI());
-    inputStream = getClass().getClassLoader().getResource(fileName);
+//    File file = new File(DEFAULT_XML_FILE);
+    URL inputStream = getClass().getClassLoader().getResource(fileName);
 
     try
     {
         builderFactory = DocumentBuilderFactory.newInstance();
         builderFactory.setNamespaceAware(true);
+        builderFactory.setIgnoringComments(true);
         DocumentBuilder builder = builderFactory.newDocumentBuilder();
         document = builder.parse(inputStream.toString());
 
@@ -84,14 +87,13 @@ boolean initialize(String fileName)
  * Выполняет компиляцию XPath-выражения и применяет скомпилированный выриант
  * к XML-документу для поиска всех масштабов.
  *
- * @param scaleValues список всех масштабов из XML-файла
- * @param document    представление всего XML-документа
- * @param xpath       XPath объект
+ * @param document представление всего XML-документа
+ * @param xpath    XPath объект
  *
  * @return список всех масштабов из XML-файла
  */
 @Override
-protected List<String> configurationScaleValues(List<String> scaleValues, Document document, XPath xpath)
+protected List<String> configurationScaleValues(Document document, XPath xpath)
 {
     scaleValues.clear();
 
@@ -102,7 +104,7 @@ protected List<String> configurationScaleValues(List<String> scaleValues, Docume
         NodeList nodeList = (NodeList) xpathExpression.evaluate(document, XPathConstants.NODESET);
         for (int i = 0; i < nodeList.getLength(); i++)
         {
-            scaleValues.add(nodeList.item(i).getAttributes().getNamedItem("scale").getNodeValue());
+            scaleValues.add(nodeList.item(i).getAttributes().getNamedItem("scale").getNodeValue().trim());
         }
 
     }
@@ -118,7 +120,6 @@ protected List<String> configurationScaleValues(List<String> scaleValues, Docume
  * Выполняет компиляцию XPath-выражения и применяет скомпилированный выриант
  * к XML-документу для поиска объектов, соответствующих выбранному пользователем значению масштаба.
  *
- * @param objects  список объектов из XML-файла, соответствующих выбранному значению масштаба
  * @param document представление всего XML-документа
  * @param xpath    XPath объект
  * @param scale    выбранное пользователем значение масштаба
@@ -126,7 +127,7 @@ protected List<String> configurationScaleValues(List<String> scaleValues, Docume
  * @return список объектов из XML-файла, соответствующих выбранному значению масштаба
  */
 @Override
-protected Set<String> configurationObjects(Set<String> objects, Document document, XPath xpath, String scale)
+protected Set<String> configurationObjects(Document document, XPath xpath, String scale)
 {
     objects.clear();
 
@@ -154,15 +155,14 @@ protected Set<String> configurationObjects(Set<String> objects, Document documen
  * Выполняет компиляцию XPath-выражения и применяет скомпилированный выриант
  * к XML-документу для поиска имен файлов, соответствующих выбранному пользователем значению масштаба.
  *
- * @param filesNames список файлов электронной карты, соответствующих выбранному значению масштаба
- * @param document   представление всего XML-документа
- * @param xpath      XPath объект
- * @param scale      выбранное пользователем значение масштаба
+ * @param document представление всего XML-документа
+ * @param xpath    XPath объект
+ * @param scale    выбранное пользователем значение масштаба
  *
  * @return список имен файлов электронной карты, соответствующих выбранному значению масштаба
  */
 @Override
-protected Set<String> configurationFilesNames(Set<String> filesNames, Document document, XPath xpath, String scale)
+protected Set<String> configurationFilesNames(Document document, XPath xpath, String scale)
 {
     filesNames.clear();
 
@@ -171,6 +171,7 @@ protected Set<String> configurationFilesNames(Set<String> filesNames, Document d
         XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale='" + scale + "']/file-name");
 
         String filesNamesString = xpathExpression.evaluate(document, XPathConstants.STRING).toString();
+        
         if (!("".equals(filesNamesString)))
         {
             filesNames.addAll(Arrays.asList(filesNamesString.split("\t|\n| ")));
@@ -189,15 +190,14 @@ protected Set<String> configurationFilesNames(Set<String> filesNames, Document d
  * Выполняет компиляцию XPath-выражения и применяет скомпилированный выриант
  * к XML-документу для поиска пути к файлам, соответствующим выбранному пользователем значению масштаба.
  *
- * @param filesPath путь к файлам электронной карты, соответствующих выбранному значению масштаба
- * @param document  представление всего XML-документа
- * @param xpath     XPath объект
- * @param scale     выбранное пользователем значение масштаба
+ * @param document представление всего XML-документа
+ * @param xpath    XPath объект
+ * @param scale    выбранное пользователем значение масштаба
  *
  * @return путь к файлам электронной карты, соответствующих выбранному значению масштаба
  */
 @Override
-protected String configurationFilesPath(String filesPath, Document document, XPath xpath, String scale)
+protected String configurationFilesPath(Document document, XPath xpath, String scale)
 {
     try
     {
@@ -217,95 +217,62 @@ protected String configurationFilesPath(String filesPath, Document document, XPa
     return filesPath;
 }
 
-/**
- * Выполняет компиляцию XPath-выражения и применяет скомпилированный выриант
- * к XML-документу для поиска типа файлов электронной карты.
- *
- * @param filesType тип файлов электронной карты
- * @param document  представление всего XML-документа
- * @param xpath     XPath объект
- *
- * @return тип файлов электронной карты
- */
 @Override
-protected String configurationFilesType(String filesType, Document document, XPath xpath)
+/**
+ * Выполняет формирование всех параметров по заданному масштабу из XML-документа
+ *
+ * @param scaleSelected выбранное пользователем значение масштаба
+ *
+ * @return true при успешной загрузке всех параметров по заданному масштабу из XML-документа,
+ *         false - в противном случае
+ */
+boolean configurationAllParameters(String scaleSelected)
 {
-    try
-    {
-        XPathExpression xpathExpression = xpath.compile("/maps/file-type");
+    objects = configurationObjects(document, xpath, scaleSelected);
+    filesNames = configurationFilesNames(document, xpath, scaleSelected);
+    filesPath = configurationFilesPath(document, xpath, scaleSelected);
 
-        filesType = xpathExpression.evaluate(document, XPathConstants.STRING).toString();
-        if ("".equals(filesType))
-        {
-            filesType = null;
-        }
-    }
-    catch (XPathExpressionException | NullPointerException ex)
+    if (objects.isEmpty() || filesNames.isEmpty() || filesPath == null)
     {
-        LOGGER.error("Error configurationFilesType() ", ex);
+        LOGGER.error("Error initialize() " + "objects is Empty: " + objects.isEmpty() + "filesNames is Empty: " + filesNames.isEmpty()
+                     + "filesPath is null: " + filesPath + "filesType is null: ");
+        return false;
     }
 
-    return filesType;
+    return true;
 }
 
 /**
  * Возвращает список объектов из XML-документа, соответствующих выбранному значению масштаба.
  *
- * @param scale выбранное пользователем значение масштаба
- *
  * @return список объектов из XML-документа, соответствующих выбранному значению масштаба
  */
 @Override
-Set<String> getObjects(String scale)
+Set<String> getObjects()
 {
-    objects = configurationObjects(objects, document, xpath, scale);
-
     return objects;
 }
 
 /**
  * Возвращает список имен файлов электронной карты, соответствующих выбранному значению масштаба.
  *
- * @param scale выбранное пользователем значение масштаба
- *
  * @return список имен файлов электронной карты, соответствующих выбранному значению масштаба
  */
 @Override
-Set<String> getFilesNames(String scale)
+Set<String> getFilesNames()
 {
-    filesNames = configurationFilesNames(filesNames, document, xpath, scale);
-
     return filesNames;
 }
 
 /**
  * Возвращает путь к файлам электронной карты, соответствующих выбранному значению масштаба.
  *
- * @param scale выбранное пользователем значение масштаба
- *
  * @return путь к файлам электронной карты, соответствующих выбранному значению масштаба
  */
 @Override
-String getFilesPath(String scale)
+String getFilesPath()
 {
-    String filesPath = null;
-    filesPath = configurationFilesPath(filesPath, document, xpath, scale);
-
     return filesPath;
-}
-
-/**
- * Возвращает тип файлов электронной карты.
- *
- * @return тип файлов электронной карты
- */
-@Override
-String getFilesType()
-{
-    String filesType = null;
-    filesType = configurationFilesType(filesType, document, xpath);
-
-    return filesType;
 }
 
 /**
@@ -316,7 +283,7 @@ String getFilesType()
 @Override
 List<String> getScaleValues()
 {
-    scaleValues = configurationScaleValues(scaleValues, document, xpath);
+    scaleValues = configurationScaleValues(document, xpath);
 
     return scaleValues;
 }

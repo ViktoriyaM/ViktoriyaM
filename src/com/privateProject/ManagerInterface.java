@@ -2,7 +2,6 @@ package com.privateProject;
 
 import java.util.List;
 import java.util.Scanner;
-import java.util.Set;
 
 public interface ManagerInterface
 {
@@ -43,4 +42,6 @@ String showMenu(List<String> scaleValues);
  */
 public String inputValidation(List<String> scaleValues, Scanner inputLine);
 
+
+public boolean controlAlgorithm(String scaleSelected);
 }
