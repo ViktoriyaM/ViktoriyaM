@@ -1,15 +1,18 @@
 package com.privateProject;
 
 import java.util.Set;
+import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.io.IOException;
+import java.util.NoSuchElementException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.DirectoryStream;
 import javafx.util.Pair;
 import java.io.*;
-import java.util.logging.Level;
+import java.net.URISyntaxException;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -17,8 +20,9 @@ public class FilesManager
 {
 
 private static final Logger LOGGER = LogManager.getLogger(FilesManager.class.getName());
-private Path path = null;
-String fileName = null;
+private String catalogName = null;
+private String fileReaderPath = null;
+private String fileWriterPath = null;
 private Set<String> filesNames = null;
 private Iterator<String> iteratorFilesNames = null;
 
@@ -34,7 +38,12 @@ private Iterator<String> iteratorFilesNames = null;
 boolean initializeCatalog(Configuration configuration)
 {
     filesNames = configuration.getFilesNames();
+    iteratorFilesNames = filesNames.iterator();
     String filesPath = configuration.getFilesPath();
+    HashSet<String> filesNamesFromCatalog = new HashSet<>();
+    String folderName = "mapping";
+    Path pathReader = null;
+    Path pathWriter = null;
 
     if (filesNames.isEmpty() || filesPath == null)
     {
@@ -43,28 +52,72 @@ boolean initializeCatalog(Configuration configuration)
         return false;
     }
 
-    Path path = Paths.get(filesPath);
-    try (DirectoryStream<Path> entries = Files.newDirectoryStream(path))
+    Path directory = Paths.get(System.getProperty("user.dir"), folderName, filesPath);
+    try
     {
-        for (Path entry : entries)
-        {
-            if (!filesNames.contains(entry.getFileName().toString()))
-            {
-                setPath(entry);
-                LOGGER.error("Error file not found " + entry);
-                return false;
-            }
-        }
+        pathWriter = Files.createDirectories(directory);
     }
     catch (IOException ex)
     {
+        setCurrentCatalog(folderName);
+        LOGGER.error("Error create Directorty " + ex);
+        return false;
+    }
+
+    try
+    {
+        pathReader = Paths.get(getClass().getClassLoader().getResource(filesPath).toURI());
+
+        setFilePath(pathReader.toString(), pathWriter.toString());
+
+        DirectoryStream<Path> entries = Files.newDirectoryStream(pathReader);
+
+        for (Path entry : entries)
+        {
+            filesNamesFromCatalog.add(entry.getFileName().toString());
+        }
+    }
+    catch (IOException | NullPointerException | URISyntaxException ex)
+    {
+        setCurrentCatalog(filesPath);
         LOGGER.error("Error files directory not found " + ex);
         return false;
+    }
+
+    return checkCatalog(filesNamesFromCatalog);
+}
+
+/**
+ * Выполняет сравнение имен файлов из каталога и имен файлов из XML-документа
+ *
+ * @param filesNamesFromCatalog имена фалов из каталога
+ *
+ * @return true если все файлы из XML-документа найдены в каталоге
+ *         false в противном случае
+ */
+private boolean checkCatalog(Set<String> filesNamesFromCatalog)
+{
+    ArrayList<String> entries = new ArrayList<>(filesNames);
+
+    for (String entry : entries)
+    {
+        if (!filesNamesFromCatalog.contains(entry))
+        {
+            setCurrentCatalog(entry);
+            LOGGER.error("Error file not found " + entry);
+            return false;
+        }
     }
 
     return true;
 }
 
+/**
+ * Проверяет наличие следующего файла для чтения в каталоге.
+ *
+ * @return true если файл для чтения есть
+ *         false в противном случае
+ */
 boolean hasNext()
 {
     if (filesNames.isEmpty())
@@ -72,24 +125,43 @@ boolean hasNext()
         return false;
     }
 
-    iteratorFilesNames = filesNames.iterator();
-
     return iteratorFilesNames.hasNext();
 }
 
+/**
+ * Формирует выходной буфер для чтения и записи файлов.
+ *
+ * @return буфер для чтения и записи
+ */
 Pair<BufferedReader, PrintWriter> next()
 {
-    String fileName = iteratorFilesNames + "_optimal";
     Pair<BufferedReader, PrintWriter> pair = null;
+    String fileName = null;
+    String currentFileName = null;
+    StringBuilder newFileName = new StringBuilder(fileWriterPath);
 
     try
     {
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(iteratorFilesNames.toString()), "windows-1251"));
+        fileName = iteratorFilesNames.next();
+    }
+    catch (NoSuchElementException ex)
+    {
+        LOGGER.error("Error in iterator Files Names " + ex);
+        return pair;
+    }
 
-        PrintWriter printWriter = new PrintWriter(fileName);
+    currentFileName = fileReaderPath + System.getProperty("file.separator") + fileName;
+    newFileName.append(System.getProperty("file.separator")).append(fileName).insert(newFileName.indexOf(".txf"), "_optimal");
+
+    try
+    {
+        setCurrentCatalog(currentFileName);
+
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(currentFileName), "windows-1251"));
+
+        PrintWriter printWriter = new PrintWriter(newFileName.toString());
 
         pair = new Pair<>(bufferedReader, printWriter);
-        setCurrentFile(iteratorFilesNames.toString());
     }
     catch (UnsupportedEncodingException | FileNotFoundException ex)
     {
@@ -100,32 +172,36 @@ Pair<BufferedReader, PrintWriter> next()
 }
 
 /**
- * Устанавливает значение пути к файлу, не найденному в каталоге при инициализации
+ * Устанавливает путь и имя текущего обрабатываемого файла.
  *
- * @param path путь к отсутствующему файлу
+ * @param catalogName путь и имя текущего обрабатываемого файла
  */
-private void setPath(Path path)
+private void setCurrentCatalog(String catalogName)
 {
-    this.path = path;
+    this.catalogName = catalogName;
 }
 
 /**
- * Возвращает путь к отсутствующему файлу
+ * Возвращает имя текущего обрабатываемого файла.
  *
- * @return путь к отсутствующему файлу
+ * @return имя текущего обрабатываемого файла
  */
-Path getPath()
+String getCurrentCatalog()
 {
-    return path;
+    return catalogName;
 }
 
-private void setCurrentFile(String fileName)
+/**
+ * Устанавливает путь к файлам для чтения и для записи.
+ *
+ * @param fileReaderPath путь к файлам для чтения
+ *
+ * @param fileWriterPath путь к файлам для записи
+ */
+private void setFilePath(String fileReaderPath, String fileWriterPath)
 {
-    this.fileName = fileName;
+    this.fileReaderPath = fileReaderPath;
+    this.fileWriterPath = fileWriterPath;
 }
 
-String getCurrentFile()
-{
-    return fileName;
-}
 }

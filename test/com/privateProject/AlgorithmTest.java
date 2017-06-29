@@ -7,6 +7,7 @@ package com.privateProject;
 
 import java.io.BufferedReader;
 import java.io.FileWriter;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -14,6 +15,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Rule;
+import org.junit.rules.ExpectedException;
 
 /**
  *
@@ -22,9 +25,10 @@ import static org.junit.Assert.*;
 public class AlgorithmTest
 {
 
-public AlgorithmTest()
-{
-}
+private Algorithm algorithm = null;
+private Configuration configuration = null;
+private Manager manager = null;
+private FilesManager filesManager = null;
 
 @BeforeClass
 public static void setUpClass()
@@ -39,62 +43,52 @@ public static void tearDownClass()
 @Before
 public void setUp()
 {
+    algorithm = new Algorithm();
+    configuration = new Configuration();
+    manager = new Manager();
+    filesManager = new FilesManager();
 }
 
 @After
 public void tearDown()
 {
+    algorithm = null;
+    configuration = null;
+    manager = null;
+    filesManager = null;
 }
 
-    /**
-     * Test of initialize method, of class Algorithm.
-     */
-    @Test
-    public void testInitialize()
-    {
-        System.out.println("initialize");
-        Configuration configuration = null;
-        String scaleSelected = "";
-        Algorithm instance = new Algorithm();
-        boolean expResult = false;
-        boolean result = instance.initialize(configuration, scaleSelected);
-        assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
-    }
+/**
+ * Test of getObjects method, of class Algorithm.
+ */
+@Rule
+public ExpectedException expectedException = ExpectedException.none();
 
-    /**
-     * Test of openCloseFile method, of class Algorithm.
-     */
-    @Test
-    public void testOpenCloseFile()
-    {
-        System.out.println("openCloseFile");
-        Set<String> filesNames = null;
-        String filesPath = "";
-        String filesType = "";
-        Algorithm instance = new Algorithm();
-        instance.openCloseFile(filesNames, filesPath, filesType);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
-    }
+@Test
+public void testGetObjects()
+{
+    System.out.println("getObjects");
+    String scale = "200 000";
+//Test without before configuration All Parameters
+    assertEquals(false, algorithm.getObjects(configuration));
 
-    /**
-     * Test of readWriteFile method, of class Algorithm.
-     */
-    @Test
-    public void testReadWriteFile()
-    {
-        System.out.println("readWriteFile");
-        BufferedReader bufferedReader = null;
-        FileWriter fileWriter = null;
-        String fileNameMapping = "";
-        String filesPath = "";
-        String filesType = "";
-        Algorithm instance = new Algorithm();
-        instance.readWriteFile(bufferedReader, fileWriter, fileNameMapping, filesPath, filesType);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
-    }
+    tearDown();
+    setUp();
+//Test after configuration All Parameters    
+    expectedException.expect(NoSuchElementException.class);
+    manager.managing();
+    assertEquals(true, manager.controlAlgorithm(scale));
+    assertEquals(true, algorithm.getObjects(configuration));
+
+}
+
+/**
+ * Test of readWriteFile method, of class Algorithm.
+ */
+@Test
+public void testReadWriteFile()
+{
+    System.out.println("readWriteFile");
+}
 
 }

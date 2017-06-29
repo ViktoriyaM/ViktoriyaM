@@ -13,6 +13,7 @@ protected static final String IDENTIFICATION_END_FILE = ".END";
 Set<String> objects = null;
 
 abstract boolean getObjects(Configuration configuration);
+
 abstract boolean readWriteFile(FilesManager filesManager);
 
 }

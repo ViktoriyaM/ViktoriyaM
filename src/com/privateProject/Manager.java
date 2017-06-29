@@ -27,9 +27,8 @@ Manager()
 /**
  * Вызывает методы для открытия XML-документа {@link Configuration#initialize()},
  * получения списка масштабов из XML-документа {@link Configuration#getScaleValues()},
- * запуска пользовательского меню для обработки первого пользовательского выбора {@link #showMenu(java.util.List)}
- * и последующего {@link #showMenu(java.util.List, java.util.Set) },
- * формирования и обработки объектов электронной карты {@link Algorithm#initialize(com.privateProject.Configuration, java.lang.String)} .
+ * запуска пользовательского меню для обработки пользовательского выбора {@link #showMenu(java.util.List) },
+ * запуска алгоритма обработки объектов электронной карты {@link #controlAlgorithm(java.lang.String) } .
  *
  */
 @Override
@@ -58,7 +57,6 @@ public void managing()
         {
             do
             {
-
                 scaleSelected = showMenu(scaleValues);
 
                 if (!CONTINUE.equals(scaleSelected) && !QUITE.equals(scaleSelected))
@@ -66,6 +64,10 @@ public void managing()
                     if (!controlAlgorithm(scaleSelected))
                     {
                         break;
+                    }
+                    else
+                    {
+                        System.out.println("Файлы карты для масштаба " + scaleSelected + " обработаны");
                     }
                 }
                 else if (CONTINUE.equals(scaleSelected) && !QUITE.equals(scaleSelected))
@@ -81,7 +83,7 @@ public void managing()
 }
 
 /**
- * Выполняет вывод в консоль еще не обработанных значений масштабов и соответствующих
+ * Выполняет вывод в консоль не обработанных значений масштабов и соответствующих
  * им порядковых номеров.
  *
  * @param scaleValues список всех масштабов из XML-документа
@@ -184,6 +186,17 @@ public String inputValidation(List<String> scaleValues, Scanner inputLine)
     }
 }
 
+/**
+ * Вызывает функцию конфигурации списка параметров из XML-документа для выбранного масштаба {@link Configuration#configurationAllParameters(java.lang.String) },
+ * вызывает функцию проверки наличия всех файлов из XML-документа в указанном каталоге {@link  FilesManager#initializeCatalog(com.privateProject.Configuration) },
+ * вызывает функцию получения списка объектов из сформированной конфигурации {@link Algorithm#getObjects(com.privateProject.Configuration) },
+ * проверяет есть ли файлы для чения и вызывает алгоритм для обработки файлов карты {@link Algorithm#readWriteFile(com.privateProject.FilesManager) }.
+ *
+ * @param scaleSelected масштаб, эквивалентный пользовательскому вводу
+ *
+ * @return true если файлы электронной карты обработаны успешно
+ *         false в противном случае
+ */
 @Override
 public boolean controlAlgorithm(String scaleSelected)
 {
@@ -202,7 +215,7 @@ public boolean controlAlgorithm(String scaleSelected)
     isCheckCatalog = filesManager.initializeCatalog(configuration);
     if (!isCheckCatalog)
     {
-        System.out.println("Файл карты не найден: " + filesManager.getPath());
+        System.out.println("Каталог не найден: " + filesManager.getCurrentCatalog());
         return false;
     }
 
@@ -218,7 +231,11 @@ public boolean controlAlgorithm(String scaleSelected)
         isCheckReadWriteFile = algorithm.readWriteFile(filesManager);
         if (!isCheckReadWriteFile)
         {
-            System.out.println("Файл карты не обработан: " + filesManager.getCurrentFile());
+            System.out.println("Файл карты не обработан: " + filesManager.getCurrentCatalog());
+        }
+        else
+        {
+            System.out.println("Файл карты: " + filesManager.getCurrentCatalog() + " обработан");
         }
     }
 

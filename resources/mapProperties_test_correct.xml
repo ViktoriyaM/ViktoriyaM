@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <maps>
-
-    <file-type>.txf</file-type>
                 
     <scale scale= "300 000">
     
         <file-path>300 000/</file-path>
     
-        <file-name>M-37-08</file-name>
+        <file-name>M-37-08.txf</file-name>
 
         <delete-objects>
             <!--Слой АКВЕДУКИ-->
@@ -23,7 +21,7 @@
     
         <file-path>1 000 000/</file-path>
     
-        <file-name>L-37</file-name>
+        <file-name>L-37.txf</file-name>
                 
         <delete-objects>
             <!--Слой  ГИДРОГРАФИЯ-->

@@ -58,10 +58,12 @@ public void testInitializeWithArgument()
 {
     System.out.println("initialize with argument");
 
-//NullPointerException
+//Test without file NullPointerException IOException
     assertEquals(false, configuration.initialize("Test.xml"));
-//    SAXException
+//Test with bad file SAXException
     assertEquals(false, configuration.initialize("mapProperties_without_all.xml"));
+//Test with good file
+    assertEquals(true, configuration.initialize("mapProperties_without_scales.xml"));
 }
 
 /**
@@ -72,15 +74,19 @@ public void testConfigurationScaleValues()
 {
     System.out.println("configurationScaleValues");
     List<String> expectedList = Collections.emptyList();
-
+//Test without scales with good initialize
     assertEquals(true, configuration.initialize("mapProperties_without_scales.xml"));
     assertEquals(expectedList, configuration.getScaleValues());
+
     tearDown();
     setUp();
+//Test without scales with bad initialize
     assertEquals(false, configuration.initialize("mapProperties_without_all.xml"));
     assertEquals(expectedList, configuration.getScaleValues());
+
     tearDown();
     setUp();
+//Test with scale with good initialize   
     expectedList = new ArrayList<>();
     Collections.addAll(expectedList, "300 000", "1 000 000");
     assertEquals(true, configuration.initialize("mapProperties_test_correct.xml"));
@@ -96,18 +102,42 @@ public void testConfigurationObjects()
     System.out.println("configurationObjects");
     String scale = "300 000";
     LinkedHashSet<String> expectedSet = new LinkedHashSet<>();
-
+//Test without objects with good initialize
     assertEquals(true, configuration.initialize("mapProperties_without_objects.xml"));
-    assertEquals(expectedSet, configuration.getObjects(scale));
+    assertEquals(expectedSet, configuration.getObjects());
+
     tearDown();
     setUp();
+//Test without objects with bad initialize
     assertEquals(false, configuration.initialize("mapProperties_without_all.xml"));
-    assertEquals(expectedSet, configuration.getObjects(scale));
+    assertEquals(expectedSet, configuration.getObjects());
+
     tearDown();
     setUp();
+//Test with objects with good initialize but before configuration All Parameters
+    assertEquals(true, configuration.initialize("mapProperties_test_correct.xml"));
+    assertEquals(expectedSet, configuration.getObjects());
+
+    tearDown();
+    setUp();
+//Test without objects with good initialize and after configuration All Parameters
+    assertEquals(true, configuration.initialize("mapProperties_without_objects.xml"));
+    assertEquals(false, configuration.configurationAllParameters(scale));
+    assertEquals(expectedSet, configuration.getObjects());
+
+    tearDown();
+    setUp();
+//Test with objects with good initialize and after configuration All Parameters
     Collections.addAll(expectedSet, "32330000", "51141200");
     assertEquals(true, configuration.initialize("mapProperties_test_correct.xml"));
-    assertEquals(expectedSet, configuration.getObjects(scale));
+    assertEquals(true, configuration.configurationAllParameters(scale));
+    assertEquals(expectedSet, configuration.getObjects());
+//New entry    
+    scale = "1 000 000";
+    expectedSet.clear();
+    Collections.addAll(expectedSet, "31134000", "23100000");
+    assertEquals(true, configuration.configurationAllParameters(scale));
+    assertEquals(expectedSet, configuration.getObjects());
 }
 
 /**
@@ -119,18 +149,42 @@ public void testConfigurationFilesNames()
     System.out.println("configurationScaleValues");
     String scale = "1 000 000";
     LinkedHashSet<String> expectedSet = new LinkedHashSet();
-
+//Test without Files Names with good initialize
     assertEquals(true, configuration.initialize("mapProperties_without_scales.xml"));
-    assertEquals(expectedSet, configuration.getFilesNames(scale));
+    assertEquals(expectedSet, configuration.getFilesNames());
+
     tearDown();
     setUp();
+//Test without Files Names with bad initialize  
     assertEquals(false, configuration.initialize("mapProperties_without_all.xml"));
-    assertEquals(expectedSet, configuration.getFilesNames(scale));
+    assertEquals(expectedSet, configuration.getFilesNames());
+
     tearDown();
     setUp();
-    Collections.addAll(expectedSet, "L-37");
+//Test with Files Names with good initialize but before configuration All Parameters    
     assertEquals(true, configuration.initialize("mapProperties_test_correct.xml"));
-    assertEquals(expectedSet, configuration.getFilesNames(scale));
+    assertEquals(expectedSet, configuration.getFilesNames());
+
+    tearDown();
+    setUp();
+//Test without Files Names with good initialize and after configuration All Parameters
+    assertEquals(true, configuration.initialize("mapProperties_without_scales.xml"));
+    assertEquals(false, configuration.configurationAllParameters(scale));
+    assertEquals(expectedSet, configuration.getFilesNames());
+
+    tearDown();
+    setUp();
+//Test with Files Names with good initialize and after configuration All Parameters
+    Collections.addAll(expectedSet, "L-37.txf");
+    assertEquals(true, configuration.initialize("mapProperties_test_correct.xml"));
+    assertEquals(true, configuration.configurationAllParameters(scale));
+    assertEquals(expectedSet, configuration.getFilesNames());
+//New entry    
+    scale = "300 000";
+    expectedSet.clear();
+    Collections.addAll(expectedSet, "M-37-08.txf");
+    assertEquals(true, configuration.configurationAllParameters(scale));
+    assertEquals(expectedSet, configuration.getFilesNames());
 }
 
 /**
@@ -142,38 +196,42 @@ public void testConfigurationFilesPath()
     System.out.println("configurationFilesPath");
     String scale = "300 000";
     String expectedString = "300 000/";
-
+//Test without Files Path with good initialize
     assertEquals(true, configuration.initialize("mapProperties_without_scales.xml"));
-    assertNull(configuration.getFilesPath(scale));
+    assertNull(configuration.getFilesPath());
+
     tearDown();
     setUp();
+    //Test without Files Path with bad initialize   
     assertEquals(false, configuration.initialize("mapProperties_without_all.xml"));
-    assertNull(configuration.getFilesPath(scale));
+    assertNull(configuration.getFilesPath());
+
     tearDown();
     setUp();
+//Test with Files Path with good initialize but before configuration All Parameters      
     assertEquals(true, configuration.initialize("mapProperties_test_correct.xml"));
-    assertEquals(expectedString, configuration.getFilesPath(scale));
-}
-
-/**
- * Test of configurationFilesType method, of class Configuration.
- */
-@Test
-public void testConfigurationFilesType()
-{
-    System.out.println("configurationFilesType");
-    String expectedString = ".txf";
-
+    assertNull(configuration.getFilesPath());
+    
+    tearDown();
+    setUp();
+//Test without Files Path with good initialize and after configuration All Parameters
     assertEquals(true, configuration.initialize("mapProperties_without_scales.xml"));
-    assertNull(configuration.getFilesType());
+    assertEquals(false, configuration.configurationAllParameters(scale));
+    assertNull(configuration.getFilesPath());
+
     tearDown();
     setUp();
-    assertEquals(false, configuration.initialize("mapProperties_without_all.xml"));
-    assertNull(configuration.getFilesType());
-    tearDown();
-    setUp();
+    
+//Test with Files Path with good initialize and after configuration All Parameters
     assertEquals(true, configuration.initialize("mapProperties_test_correct.xml"));
-    assertEquals(expectedString, configuration.getFilesType());
+    assertEquals(true, configuration.configurationAllParameters(scale));
+    assertEquals(expectedString, configuration.getFilesPath());
+//New entry    
+    scale = "1 000 000";
+    expectedString = "1 000 000/";
+    assertEquals(true, configuration.configurationAllParameters(scale));
+    assertEquals(expectedString, configuration.getFilesPath());
+
 }
 
 /**
@@ -207,18 +265,6 @@ public void testGetFilesPath()
     System.out.println("getFilesPath");
 
     testConfigurationFilesPath();
-}
-
-/**
- * Test of getFilesType method, of class Configuration.
- */
-@Test
-public void testGetFilesType()
-{
-    System.out.println("getFilesType");
-
-    testConfigurationFilesType();
-
 }
 
 /**

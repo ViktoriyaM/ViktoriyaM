@@ -9,7 +9,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.*;
 import java.io.IOException;
-import java.io.File;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -58,7 +57,6 @@ boolean initialize()
 @Override
 boolean initialize(String fileName)
 {
-//    File file = new File(DEFAULT_XML_FILE);
     URL inputStream = getClass().getClassLoader().getResource(fileName);
 
     try
@@ -171,7 +169,7 @@ protected Set<String> configurationFilesNames(Document document, XPath xpath, St
         XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale='" + scale + "']/file-name");
 
         String filesNamesString = xpathExpression.evaluate(document, XPathConstants.STRING).toString();
-        
+
         if (!("".equals(filesNamesString)))
         {
             filesNames.addAll(Arrays.asList(filesNamesString.split("\t|\n| ")));
@@ -219,11 +217,11 @@ protected String configurationFilesPath(Document document, XPath xpath, String s
 
 @Override
 /**
- * Выполняет формирование всех параметров по заданному масштабу из XML-документа
+ * Выполняет формирование всех параметров из XML-документа, соответствующих выбранному пользователем значению масштаба.
  *
  * @param scaleSelected выбранное пользователем значение масштаба
  *
- * @return true при успешной загрузке всех параметров по заданному масштабу из XML-документа,
+ * @return true при успешной загрузке всех параметров из XML-документа,
  *         false - в противном случае
  */
 boolean configurationAllParameters(String scaleSelected)
