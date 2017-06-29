@@ -9,46 +9,92 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.*;
 import java.io.IOException;
-import java.io.FileInputStream;
-import java.io.File;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.List;
 import java.util.ArrayList;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-public final class Configuration extends ConfigurationAbstract
+final public class Configuration extends ConfigurationAbstract
 {
+
+private static final Logger LOGGER = LogManager.getLogger(Configuration.class.getName());
 
 Configuration()
 {
-    builderFactory = DocumentBuilderFactory.newInstance();
-    
     objects = new LinkedHashSet<>();
     filesNames = new LinkedHashSet<>();
-    filesPath = new StringBuilder();
-    filesType = new StringBuilder();
-    scaleValue = new ArrayList<>();
+    scaleValues = new ArrayList<>();
+}
+
+/**
+ * Выполняет загрузку ресурса по умолчанию (XML-документа) для чтения.
+ *
+ * @return true при успешной загрузке и подключению к файловому ресурсу,
+ *         false - в противном случае
+ */
+@Override
+boolean initialize()
+{
+
+    boolean resultInit = initialize(DEFAULT_XML_FILE);
+    return resultInit;
+}
+
+/**
+ * Выполняет загрузку ресурса (XML-документа) для чтения, создает дерево документа из файла,
+ * выполняет синтаксический анализ XML-документа, полученного из заданного потока ввода,
+ * создает фабрику XPathFactory и использует ее для создания объека XPath.
+ *
+ * @param fileName имя XML-документа
+ *
+ * @return true при успешной загрузке и подключению к файловому ресурсу,
+ *         false - в противном случае
+ */
+@Override
+boolean initialize(String fileName)
+{
+    URL inputStream = getClass().getClassLoader().getResource(fileName);
 
     try
     {
-        FileInputStream file = new FileInputStream(new File(DEFAULT_XML_FILENAME));
-
+        builderFactory = DocumentBuilderFactory.newInstance();
+        builderFactory.setNamespaceAware(true);
+        builderFactory.setIgnoringComments(true);
         DocumentBuilder builder = builderFactory.newDocumentBuilder();
-        document = builder.parse(file);
+        document = builder.parse(inputStream.toString());
 
         XPathFactory xpathFactory = XPathFactory.newInstance();
         xpath = xpathFactory.newXPath();
+
+        LOGGER.info("File " + inputStream + " is open successfully");
+
+        return true;
     }
-    catch (ParserConfigurationException | SAXException | IOException e)
+    catch (IOException | ParserConfigurationException | SAXException | IllegalArgumentException | NullPointerException ex)
     {
-        System.out.println(e);
+        LOGGER.error("Error initialize() ", ex);
+        return false;
     }
 }
 
+/**
+ * Выполняет компиляцию XPath-выражения и применяет скомпилированный выриант
+ * к XML-документу для поиска всех масштабов.
+ *
+ * @param document представление всего XML-документа
+ * @param xpath    XPath объект
+ *
+ * @return список всех масштабов из XML-файла
+ */
 @Override
-protected List<String> configurationScaleValue(List<String> scaleValue, Document document, XPath xpath)
+protected List<String> configurationScaleValues(Document document, XPath xpath)
 {
+    scaleValues.clear();
+
     try
     {
         XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale]");
@@ -56,129 +102,188 @@ protected List<String> configurationScaleValue(List<String> scaleValue, Document
         NodeList nodeList = (NodeList) xpathExpression.evaluate(document, XPathConstants.NODESET);
         for (int i = 0; i < nodeList.getLength(); i++)
         {
-            scaleValue.add(nodeList.item(i).getAttributes().getNamedItem("scale").getNodeValue());
+            scaleValues.add(nodeList.item(i).getAttributes().getNamedItem("scale").getNodeValue().trim());
         }
 
     }
-    catch (XPathExpressionException e)
+    catch (XPathExpressionException | NullPointerException ex)
     {
-        System.out.println(e);
+        LOGGER.error("Error configurationScaleValues() ", ex);
     }
 
-    return scaleValue;
+    return scaleValues;
 }
 
+/**
+ * Выполняет компиляцию XPath-выражения и применяет скомпилированный выриант
+ * к XML-документу для поиска объектов, соответствующих выбранному пользователем значению масштаба.
+ *
+ * @param document представление всего XML-документа
+ * @param xpath    XPath объект
+ * @param scale    выбранное пользователем значение масштаба
+ *
+ * @return список объектов из XML-файла, соответствующих выбранному значению масштаба
+ */
 @Override
-protected Set<String> configurationObjects(Set<String> objects, Document document, XPath xpath, String scale)
+protected Set<String> configurationObjects(Document document, XPath xpath, String scale)
 {
+    objects.clear();
 
     try
     {
         XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale='" + scale + "']/delete-objects");
 
-        objects.addAll(Arrays.asList(xpathExpression.evaluate(document, XPathConstants.STRING).toString().split("\n| ")));
+        String objectsString = xpathExpression.evaluate(document, XPathConstants.STRING).toString();
+        if (!("".equals(objectsString)))
+        {
+            objects.addAll(Arrays.asList(objectsString.split("\n| ")));
+            objects.remove("");
+        }
     }
-    catch (XPathExpressionException e)
+    catch (XPathExpressionException | NullPointerException ex)
     {
-        System.out.println(e);
+        LOGGER.error("Error configurationObjects() ", ex);
     }
+
     return objects;
+
 }
 
+/**
+ * Выполняет компиляцию XPath-выражения и применяет скомпилированный выриант
+ * к XML-документу для поиска имен файлов, соответствующих выбранному пользователем значению масштаба.
+ *
+ * @param document представление всего XML-документа
+ * @param xpath    XPath объект
+ * @param scale    выбранное пользователем значение масштаба
+ *
+ * @return список имен файлов электронной карты, соответствующих выбранному значению масштаба
+ */
 @Override
-protected Set<String> configurationFilesNames(Set<String> filesNames, Document document, XPath xpath, String scale)
+protected Set<String> configurationFilesNames(Document document, XPath xpath, String scale)
 {
+    filesNames.clear();
+
     try
     {
         XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale='" + scale + "']/file-name");
 
-        filesNames.addAll(Arrays.asList(xpathExpression.evaluate(document, XPathConstants.STRING).toString().split("\t|\n| ")));
+        String filesNamesString = xpathExpression.evaluate(document, XPathConstants.STRING).toString();
+
+        if (!("".equals(filesNamesString)))
+        {
+            filesNames.addAll(Arrays.asList(filesNamesString.split("\t|\n| ")));
+            filesNames.remove("");
+        }
     }
-    catch (XPathExpressionException e)
+    catch (XPathExpressionException | NullPointerException ex)
     {
-        System.out.println(e);
+        LOGGER.error("Error configurationFilesNames() ", ex);
     }
 
     return filesNames;
 }
 
+/**
+ * Выполняет компиляцию XPath-выражения и применяет скомпилированный выриант
+ * к XML-документу для поиска пути к файлам, соответствующим выбранному пользователем значению масштаба.
+ *
+ * @param document представление всего XML-документа
+ * @param xpath    XPath объект
+ * @param scale    выбранное пользователем значение масштаба
+ *
+ * @return путь к файлам электронной карты, соответствующих выбранному значению масштаба
+ */
 @Override
-protected StringBuilder configurationFilesPath(StringBuilder filesPath, Document document, XPath xpath, String scale)
+protected String configurationFilesPath(Document document, XPath xpath, String scale)
 {
     try
     {
         XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale='" + scale + "']/file-path");
 
-        filesPath.insert(0, (String) xpathExpression.evaluate(document, XPathConstants.STRING));
+        filesPath = xpathExpression.evaluate(document, XPathConstants.STRING).toString();
+        if ("".equals(filesPath))
+        {
+            filesPath = null;
+        }
     }
-    catch (XPathExpressionException e)
+    catch (XPathExpressionException | NullPointerException ex)
     {
-        System.out.println(e);
+        LOGGER.error("Error configurationFilesPath() ", ex);
     }
 
     return filesPath;
 }
 
 @Override
-protected StringBuilder configurationFilesType(StringBuilder filesType, Document document, XPath xpath)
+/**
+ * Выполняет формирование всех параметров из XML-документа, соответствующих выбранному пользователем значению масштаба.
+ *
+ * @param scaleSelected выбранное пользователем значение масштаба
+ *
+ * @return true при успешной загрузке всех параметров из XML-документа,
+ *         false - в противном случае
+ */
+boolean configurationAllParameters(String scaleSelected)
 {
-    try
-    {
-        XPathExpression xpathExpression = xpath.compile("/maps/file-type");
+    objects = configurationObjects(document, xpath, scaleSelected);
+    filesNames = configurationFilesNames(document, xpath, scaleSelected);
+    filesPath = configurationFilesPath(document, xpath, scaleSelected);
 
-        filesType.insert(0, (String) xpathExpression.evaluate(document, XPathConstants.STRING));
-    }
-    catch (XPathExpressionException e)
+    if (objects.isEmpty() || filesNames.isEmpty() || filesPath == null)
     {
-        System.out.println(e);
+        LOGGER.error("Error initialize() " + "objects is Empty: " + objects.isEmpty() + "filesNames is Empty: " + filesNames.isEmpty()
+                     + "filesPath is null: " + filesPath + "filesType is null: ");
+        return false;
     }
 
-    return filesType;
+    return true;
 }
 
+/**
+ * Возвращает список объектов из XML-документа, соответствующих выбранному значению масштаба.
+ *
+ * @return список объектов из XML-документа, соответствующих выбранному значению масштаба
+ */
 @Override
-Set<String> getObjects(String scale)
+Set<String> getObjects()
 {
-    objects.clear();
-    objects = configurationObjects(objects, document, xpath, scale);
-
     return objects;
 }
 
+/**
+ * Возвращает список имен файлов электронной карты, соответствующих выбранному значению масштаба.
+ *
+ * @return список имен файлов электронной карты, соответствующих выбранному значению масштаба
+ */
 @Override
-Set<String> getFilesNames(String scale)
+Set<String> getFilesNames()
 {
-    filesNames.clear();
-    filesNames = configurationFilesNames(filesNames, document, xpath, scale);
-
     return filesNames;
 }
 
+/**
+ * Возвращает путь к файлам электронной карты, соответствующих выбранному значению масштаба.
+ *
+ * @return путь к файлам электронной карты, соответствующих выбранному значению масштаба
+ */
 @Override
-StringBuilder getFilesPath(String scale)
+String getFilesPath()
 {
-    filesPath.delete(0, filesPath.length());
-    filesPath = configurationFilesPath(filesPath, document, xpath, scale);
-
     return filesPath;
 }
 
-@Override
-StringBuilder getFilesType()
-{
-    filesType.delete(0, filesType.length());
-    filesPath = configurationFilesType(filesType, document, xpath);
-
-    return filesPath;
-}
-
+/**
+ * Возвращает список всех масштабов из XML-файла.
+ *
+ * @return список всех масштабов из XML-файла
+ */
 @Override
 List<String> getScaleValues()
 {
-    scaleValue.clear();
-    scaleValue = configurationScaleValue(scaleValue, document, xpath);
+    scaleValues = configurationScaleValues(document, xpath);
 
-    return scaleValue;
+    return scaleValues;
 }
 
 }
