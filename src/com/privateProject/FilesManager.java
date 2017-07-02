@@ -45,7 +45,7 @@ boolean initializeCatalog(Configuration configuration)
     Path pathReader = null;
     Path pathWriter = null;
 
-    if (filesNames.isEmpty() || filesPath == null)
+    if (filesNames.isEmpty() || filesPath.isEmpty())
     {
         LOGGER.error("Error the get function is called before configuration of all: " + "filesNames is Empty: " + filesNames.isEmpty()
                      + "filesPath is null: " + filesPath + "filesType is null: ");
@@ -133,9 +133,9 @@ boolean hasNext()
  *
  * @return буфер для чтения и записи
  */
-Pair<BufferedReader, PrintWriter> next()
+Pair<BufferedReader, RandomAccessFile> next()
 {
-    Pair<BufferedReader, PrintWriter> pair = null;
+    Pair<BufferedReader, RandomAccessFile> pair = null;
     String fileName = null;
     String currentFileName = null;
     StringBuilder newFileName = new StringBuilder(fileWriterPath);
@@ -159,9 +159,10 @@ Pair<BufferedReader, PrintWriter> next()
 
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(currentFileName), "windows-1251"));
 
-        PrintWriter printWriter = new PrintWriter(newFileName.toString());
+//        PrintWriter randomAccessFile = new PrintWriter(newFileName.toString());
+        RandomAccessFile randomAccessFile = new RandomAccessFile(newFileName.toString(), "rw");
 
-        pair = new Pair<>(bufferedReader, printWriter);
+        pair = new Pair<>(bufferedReader, randomAccessFile);
     }
     catch (UnsupportedEncodingException | FileNotFoundException ex)
     {
@@ -204,4 +205,26 @@ private void setFilePath(String fileReaderPath, String fileWriterPath)
     this.fileWriterPath = fileWriterPath;
 }
 
+/**
+ * Закрывает поток чтения и поток записи
+ *
+ * @param bufferedReader   буфферизированный поток для чтения данных из файла
+ * @param randomAccessFile поток для записи данных в файл с произвольным доступом
+ *
+ * @return результат закрытия потоков чтения и записи
+ */
+boolean close(BufferedReader bufferedReader, RandomAccessFile randomAccessFile)
+{
+    try
+    {
+        bufferedReader.close();
+        randomAccessFile.close();
+    }
+    catch (IOException ex)
+    {
+        LOGGER.error("Error close file " + ex);
+        return false;
+    }
+    return true;
+}
 }

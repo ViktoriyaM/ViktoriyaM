@@ -230,7 +230,7 @@ boolean configurationAllParameters(String scaleSelected)
     filesNames = configurationFilesNames(document, xpath, scaleSelected);
     filesPath = configurationFilesPath(document, xpath, scaleSelected);
 
-    if (objects.isEmpty() || filesNames.isEmpty() || filesPath == null)
+    if (objects.isEmpty() || filesNames.isEmpty() || filesPath.isEmpty())
     {
         LOGGER.error("Error initialize() " + "objects is Empty: " + objects.isEmpty() + "filesNames is Empty: " + filesNames.isEmpty()
                      + "filesPath is null: " + filesPath + "filesType is null: ");
