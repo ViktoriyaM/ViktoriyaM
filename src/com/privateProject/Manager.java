@@ -1,29 +1,31 @@
 package com.privateProject;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.net.URISyntaxException;
 import java.util.Scanner;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+import javafx.util.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class Manager implements ManagerInterface
 {
-
-private Set<Integer> inputScales = null;
+private Set<Integer> selectedScales = null;
 private Algorithm algorithm = null;
 private FilesManager filesManager = null;
 private Configuration configuration = null;
 private static final Logger LOGGER = LogManager.getLogger(Manager.class.getName());
-
 Manager()
 {
-    inputScales = new HashSet<>();
+    selectedScales = new HashSet<>();
     algorithm = new Algorithm();
     configuration = new Configuration();
     filesManager = new FilesManager();
 }
-
 /**
  * Вызывает методы для открытия XML-документа {@link Configuration#initialize()},
  * получения списка масштабов из XML-документа {@link Configuration#getScaleValues()},
@@ -34,147 +36,111 @@ Manager()
 @Override
 public void managing()
 {
-    String scaleSelected = null;
-    List<String> scaleValues = null;
-
-    boolean resultInit = configuration.initialize();
-
-    if (!resultInit)
+    boolean status = configuration.initialize();
+    if (!status)
     {
         System.out.println("Ошибка при инициализации файла XML");
         LOGGER.error("Error initialization XML file");
+        LOGGER.info("Completion of the application");
+        return;
     }
-    else
+    List<String> configuredScales = configuration.getScaleValues();
+    if (configuredScales.isEmpty())
     {
-        scaleValues = configuration.getScaleValues();
-
-        if (scaleValues.isEmpty())
+        System.out.println("Ошибка при формировании списка масштабов в файле XML");
+        LOGGER.error("Error in the formation of the scale list in the XML file");
+        LOGGER.info("Completion of the application");
+        return;
+    }
+    String selectedScale;
+    do
+    {
+        selectedScale = showMenu(configuredScales);
+        if (!CONTINUE.equals(selectedScale) && !QUITE.equals(selectedScale))
         {
-            System.out.println("Ошибка при формировании списка масштабов в файле XML");
-            LOGGER.error("Error in the formation of the scale list in the XML file");
-        }
-        else
-        {
-            do
+            if (!controlAlgorithm(selectedScale))
             {
-                scaleSelected = showMenu(scaleValues);
-
-                if (!CONTINUE.equals(scaleSelected) && !QUITE.equals(scaleSelected))
-                {
-                    if (!controlAlgorithm(scaleSelected))
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        System.out.println("Файлы карты для масштаба " + scaleSelected + " обработаны");
-                    }
-                }
-                else if (CONTINUE.equals(scaleSelected) && !QUITE.equals(scaleSelected))
-                {
-                    System.out.println("Введено некорректное значение");
-                }
+                clearObjectsManager();
+                break;
             }
-            while (!QUITE.equals(scaleSelected));
-
-            LOGGER.info("Completion of the application");
+            else
+            {
+                System.out.println("Файлы карты для масштаба " + selectedScale + " обработаны");
+            }
+        }
+        else if (CONTINUE.equals(selectedScale) && !QUITE.equals(selectedScale))
+        {
+            System.out.println("Введено некорректное значение");
         }
     }
+    while (!QUITE.equals(selectedScale));
+    LOGGER.info("Completion of the application");
 }
-
 /**
  * Выполняет вывод в консоль не обработанных значений масштабов и соответствующих
  * им порядковых номеров.
  *
- * @param scaleValues список всех масштабов из XML-документа
+ * @param configuredScales список всех масштабов из XML-документа
  *
  * @return масштаб, эквивалентный пользовательскому вводу
  */
 @Override
-public String showMenu(List<String> scaleValues)
+public String showMenu(final List<String> configuredScales)
 {
     Scanner inputLine = new Scanner(System.in);
-    String inputValue = null;
-
     System.out.println("Введите номер, соответствующий масштабу карты, для удаления объектов:");
-    for (int i = 0; i < scaleValues.size(); i++)
+    for (int i = 0; i < configuredScales.size(); i++)
     {
-        if (!inputScales.isEmpty())
+        if (!selectedScales.contains(i))
         {
-            if (!inputScales.contains(i))
-            {
-                System.out.println(i + " - " + "масштаб " + scaleValues.get(i));
-            }
-        }
-        else
-        {
-            System.out.println(i + " - " + "масштаб " + scaleValues.get(i));
+            System.out.println(i + " - " + "масштаб " + configuredScales.get(i));
         }
     }
     System.out.println("q - выход");
-
-    inputValue = inputValidation(scaleValues, inputLine);
-
+    String inputValue = inputValidation(configuredScales, inputLine);
     return inputValue;
 }
-
 /**
  * Выполняет проверку пользовательского ввода в консоль. Осуществялет проверку
  * пользовательского ввода на значение порядкового номера,
  * диапазон, а также на строку выхода из программы. Запрещает повторный ввод порядкового
  * номера для масштаба, ранее уже обработанного в программе.
  *
- * @param scaleValues список всех масштабов из XML-документа
- * @param inputLine   объект Scanner
+ * @param configuredScales список всех масштабов из XML-документа
+ * @param inputLine        объект Scanner
  *
  * @return масштаб, эквивалентный пользовательскому вводу
  */
 @Override
-public String inputValidation(List<String> scaleValues, Scanner inputLine)
+public String inputValidation(final List<String> configuredScales, final Scanner inputLine)
 {
-    String inputString = null;
-    boolean isNumber = false;
-    int inputNumber = 0;
-
-    isNumber = inputLine.hasNextInt();
-
+    boolean isNumber = inputLine.hasNextInt();
     if (isNumber)
     {
-        inputNumber = inputLine.nextInt();
+        int inputNumber = inputLine.nextInt();
         LOGGER.info("The value entered: " + inputNumber);
-
         //проверка на нахождение числа в диапазоне
-        if (inputNumber >= 0 && inputNumber < scaleValues.size())
+        if (inputNumber >= 0 && inputNumber < configuredScales.size())
         {
-            if (!inputScales.isEmpty())
+            if (!selectedScales.contains(inputNumber))
             {
-                if (!inputScales.contains(inputNumber))
-                {
-                    inputScales.add(inputNumber);
-                    return scaleValues.get(inputNumber);
-                }
-                else
-                {
-                    return CONTINUE;
-                }
+                selectedScales.add(inputNumber);
+                return configuredScales.get(inputNumber);
             }
             else
             {
-                inputScales.add(inputNumber);
-                return scaleValues.get(inputNumber);
+                return CONTINUE;
             }
         }
         else
         {
-
             return CONTINUE;
         }
     }
     else
     {
-        inputString = inputLine.next();
+        String inputString = inputLine.next();
         LOGGER.info("The value entered: " + inputString);
-
         if (QUITE.equals(inputString))
         {
             return QUITE;
@@ -185,61 +151,70 @@ public String inputValidation(List<String> scaleValues, Scanner inputLine)
         }
     }
 }
-
 /**
  * Вызывает функцию конфигурации списка параметров из XML-документа для выбранного масштаба {@link Configuration#configurationAllParameters(java.lang.String) },
  * вызывает функцию проверки наличия всех файлов из XML-документа в указанном каталоге {@link  FilesManager#initializeCatalog(com.privateProject.Configuration) },
  * вызывает функцию получения списка объектов из сформированной конфигурации {@link Algorithm#getObjects(com.privateProject.Configuration) },
  * проверяет есть ли файлы для чения и вызывает алгоритм для обработки файлов карты {@link Algorithm#readWriteFile(com.privateProject.FilesManager) }.
  *
- * @param scaleSelected масштаб, эквивалентный пользовательскому вводу
+ * @param selectedScale масштаб, эквивалентный пользовательскому вводу
  *
  * @return true если файлы электронной карты обработаны успешно
  *         false в противном случае
  */
 @Override
-public boolean controlAlgorithm(String scaleSelected)
+public boolean controlAlgorithm(final String selectedScale)
 {
-    boolean isCheckConfiguration = false;
-    boolean isCheckCatalog = false;
-    boolean isCheckReadWriteFile = false;
-    boolean isCheckGetObjects = false;
-
-    isCheckConfiguration = configuration.configurationAllParameters(scaleSelected);
-    if (!isCheckConfiguration)
+    boolean status = configuration.configurationAllParameters(selectedScale);
+    if (!status)
     {
         System.out.println("Ошибка при формировании списка параметров в файле XML");
         return false;
     }
-
-    isCheckCatalog = filesManager.initializeCatalog(configuration);
-    if (!isCheckCatalog)
+    status = filesManager.initializeDirectory(configuration);
+    if (!status)
     {
-        System.out.println("Каталог не найден: " + filesManager.getCurrentCatalog());
+        System.out.println("Ошибка при инициализации каталога " + filesManager.getCurrentDirectory());
         return false;
     }
-
-    isCheckGetObjects = algorithm.getObjects(configuration);
-    if (!isCheckGetObjects)
+    status = filesManager.checkingFilesInDirectory();
+    if (!status)
+    {
+        System.out.println("Файл не найден: " + filesManager.getCurrentFullPath());
+        return false;
+    }
+    status = algorithm.updateObjects(configuration);
+    if (!status)
     {
         System.out.println("Ошибка при формировании списка параметров из файла XML");
         return false;
     }
-
     while (filesManager.hasNext())
     {
-        isCheckReadWriteFile = algorithm.readWriteFile(filesManager);
-        if (!isCheckReadWriteFile)
+        status = algorithm.mapOverwriting(filesManager::next);
+        if (!status)
         {
-            System.out.println("Файл карты не обработан: " + filesManager.getCurrentCatalog());
+            System.out.println("Файл карты не обработан: " + filesManager.getCurrentFullPath());
         }
         else
         {
-            System.out.println("Файл карты: " + filesManager.getCurrentCatalog() + " обработан");
+            System.out.println("Файл карты: " + filesManager.getCurrentFullPath() + " обработан");
+        }
+        if (!filesManager.close())
+        {
+            System.out.println("Файл карты: " + filesManager.getCurrentFullPath() + " закрыт с ошибкой");
         }
     }
-
     return true;
 }
-
+/**
+ * Присваивает ссылкам на ненужные объекты в классе Manager значение null.
+ */
+private void clearObjectsManager()
+{
+    selectedScales = null;
+    algorithm = null;
+    configuration = null;
+    filesManager = null;
+}
 }

@@ -3,7 +3,6 @@ package com.privateProject;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -20,16 +19,13 @@ import org.apache.logging.log4j.Logger;
 
 final public class Configuration extends ConfigurationAbstract
 {
-
 private static final Logger LOGGER = LogManager.getLogger(Configuration.class.getName());
-
 Configuration()
 {
     objects = new LinkedHashSet<>();
     filesNames = new LinkedHashSet<>();
     scaleValues = new ArrayList<>();
 }
-
 /**
  * Выполняет загрузку ресурса по умолчанию (XML-документа) для чтения.
  *
@@ -39,11 +35,9 @@ Configuration()
 @Override
 boolean initialize()
 {
-
     boolean resultInit = initialize(DEFAULT_XML_FILE);
     return resultInit;
 }
-
 /**
  * Выполняет загрузку ресурса (XML-документа) для чтения, создает дерево документа из файла,
  * выполняет синтаксический анализ XML-документа, полученного из заданного потока ввода,
@@ -58,20 +52,16 @@ boolean initialize()
 boolean initialize(String fileName)
 {
     URL inputStream = getClass().getClassLoader().getResource(fileName);
-
     try
     {
-        builderFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
         builderFactory.setNamespaceAware(true);
         builderFactory.setIgnoringComments(true);
         DocumentBuilder builder = builderFactory.newDocumentBuilder();
         document = builder.parse(inputStream.toString());
-
         XPathFactory xpathFactory = XPathFactory.newInstance();
         xpath = xpathFactory.newXPath();
-
         LOGGER.info("File " + inputStream + " is open successfully");
-
         return true;
     }
     catch (IOException | ParserConfigurationException | SAXException | IllegalArgumentException | NullPointerException ex)
@@ -80,7 +70,6 @@ boolean initialize(String fileName)
         return false;
     }
 }
-
 /**
  * Выполняет компиляцию XPath-выражения и применяет скомпилированный выриант
  * к XML-документу для поиска всех масштабов.
@@ -94,26 +83,21 @@ boolean initialize(String fileName)
 protected List<String> configurationScaleValues(Document document, XPath xpath)
 {
     scaleValues.clear();
-
     try
     {
         XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale]");
-
         NodeList nodeList = (NodeList) xpathExpression.evaluate(document, XPathConstants.NODESET);
         for (int i = 0; i < nodeList.getLength(); i++)
         {
             scaleValues.add(nodeList.item(i).getAttributes().getNamedItem("scale").getNodeValue().trim());
         }
-
     }
     catch (XPathExpressionException | NullPointerException ex)
     {
         LOGGER.error("Error configurationScaleValues() ", ex);
     }
-
     return scaleValues;
 }
-
 /**
  * Выполняет компиляцию XPath-выражения и применяет скомпилированный выриант
  * к XML-документу для поиска объектов, соответствующих выбранному пользователем значению масштаба.
@@ -125,14 +109,12 @@ protected List<String> configurationScaleValues(Document document, XPath xpath)
  * @return список объектов из XML-файла, соответствующих выбранному значению масштаба
  */
 @Override
-protected Set<String> configurationObjects(Document document, XPath xpath, String scale)
+protected Set<String> configurationObjectsForDelete(Document document, XPath xpath, String scale)
 {
     objects.clear();
-
     try
     {
-        XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale='" + scale + "']/delete-objects");
-
+        XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale='" + scale + "']/objectsForDelete");
         String objectsString = xpathExpression.evaluate(document, XPathConstants.STRING).toString();
         if (!("".equals(objectsString)))
         {
@@ -144,11 +126,8 @@ protected Set<String> configurationObjects(Document document, XPath xpath, Strin
     {
         LOGGER.error("Error configurationObjects() ", ex);
     }
-
     return objects;
-
 }
-
 /**
  * Выполняет компиляцию XPath-выражения и применяет скомпилированный выриант
  * к XML-документу для поиска имен файлов, соответствующих выбранному пользователем значению масштаба.
@@ -163,13 +142,10 @@ protected Set<String> configurationObjects(Document document, XPath xpath, Strin
 protected Set<String> configurationFilesNames(Document document, XPath xpath, String scale)
 {
     filesNames.clear();
-
     try
     {
-        XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale='" + scale + "']/file-name");
-
+        XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale='" + scale + "']/filesNames");
         String filesNamesString = xpathExpression.evaluate(document, XPathConstants.STRING).toString();
-
         if (!("".equals(filesNamesString)))
         {
             filesNames.addAll(Arrays.asList(filesNamesString.split("\t|\n| ")));
@@ -180,10 +156,8 @@ protected Set<String> configurationFilesNames(Document document, XPath xpath, St
     {
         LOGGER.error("Error configurationFilesNames() ", ex);
     }
-
     return filesNames;
 }
-
 /**
  * Выполняет компиляцию XPath-выражения и применяет скомпилированный выриант
  * к XML-документу для поиска пути к файлам, соответствующим выбранному пользователем значению масштаба.
@@ -199,8 +173,7 @@ protected String configurationFilesPath(Document document, XPath xpath, String s
 {
     try
     {
-        XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale='" + scale + "']/file-path");
-
+        XPathExpression xpathExpression = xpath.compile("/maps/scale[@scale='" + scale + "']/filesPath");
         filesPath = xpathExpression.evaluate(document, XPathConstants.STRING).toString();
         if ("".equals(filesPath))
         {
@@ -211,10 +184,8 @@ protected String configurationFilesPath(Document document, XPath xpath, String s
     {
         LOGGER.error("Error configurationFilesPath() ", ex);
     }
-
     return filesPath;
 }
-
 @Override
 /**
  * Выполняет формирование всех параметров из XML-документа, соответствующих выбранному пользователем значению масштаба.
@@ -226,31 +197,27 @@ protected String configurationFilesPath(Document document, XPath xpath, String s
  */
 boolean configurationAllParameters(String scaleSelected)
 {
-    objects = configurationObjects(document, xpath, scaleSelected);
+    objects = configurationObjectsForDelete(document, xpath, scaleSelected);
     filesNames = configurationFilesNames(document, xpath, scaleSelected);
     filesPath = configurationFilesPath(document, xpath, scaleSelected);
-
     if (objects.isEmpty() || filesNames.isEmpty() || filesPath.isEmpty())
     {
         LOGGER.error("Error initialize() " + "objects is Empty: " + objects.isEmpty() + "filesNames is Empty: " + filesNames.isEmpty()
                      + "filesPath is null: " + filesPath + "filesType is null: ");
         return false;
     }
-
     return true;
 }
-
 /**
  * Возвращает список объектов из XML-документа, соответствующих выбранному значению масштаба.
  *
  * @return список объектов из XML-документа, соответствующих выбранному значению масштаба
  */
 @Override
-Set<String> getObjects()
+Set<String> getObjectsForDelete()
 {
     return objects;
 }
-
 /**
  * Возвращает список имен файлов электронной карты, соответствующих выбранному значению масштаба.
  *
@@ -261,7 +228,6 @@ Set<String> getFilesNames()
 {
     return filesNames;
 }
-
 /**
  * Возвращает путь к файлам электронной карты, соответствующих выбранному значению масштаба.
  *
@@ -272,7 +238,6 @@ String getFilesPath()
 {
     return filesPath;
 }
-
 /**
  * Возвращает список всех масштабов из XML-файла.
  *
@@ -282,8 +247,6 @@ String getFilesPath()
 List<String> getScaleValues()
 {
     scaleValues = configurationScaleValues(document, xpath);
-
     return scaleValues;
 }
-
 }

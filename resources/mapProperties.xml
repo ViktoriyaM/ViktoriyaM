@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <maps>              
     <scale scale= "200 000">    
-        <file-path>200 000/</file-path>    
-        <file-name>M-37-08.txf M-37-09.txf M-37-13.txf M-37-14.txf M-37-15.txf 
+        <filesPath>200 000/</filesPath>    
+        <filesNames>M-37-08.txf M-37-09.txf M-37-13.txf M-37-14.txf M-37-15.txf 
             M-37-20.txf M-37-21.txf M-38-21.txf M-38-22.txf N-37-02.txf N-37-03.txf 
             N-37-04.txf N-37-05.txf N-37-06.txf N-37-07.txf N-37-08.txf N-37-09.txf
             N-37-10.txf N-37-11.txf N-37-12.txf N-37-15.txf N-37-16.txf N-37-17.txf
@@ -10,8 +10,8 @@
             N-39-08.txf O-37-20.txf O-37-21.txf O-37-22.txf O-37-23.txf O-37-26.txf
             O-37-27.txf O-37-28.txf O-37-29.txf O-37-32.txf O-37-33.txf O-37-34.txf
             O-37-35.txf M-38-23.txf M-38-24.txf M-38-27.txf M-38-28.txf M-38-29.txf
-            M-38-30.txf M-38-33.txf M-38-34.txf M-38-35.txf M-38-36.txf</file-name>
-        <delete-objects>
+            M-38-30.txf M-38-33.txf M-38-34.txf M-38-35.txf M-38-36.txf</filesNames>
+        <objectsForDelete>
             <!--Слой АКВЕДУКИ-->
             32330000 <!--АКВЕДУКИ (Л*)-->
             <!--Слой  ГИДРОГРАФИЯ-->
@@ -553,12 +553,12 @@
             51141400 <!--ЭЛЕКТРОСТАН.ГЕОТЕРМАЛЬН.( К-С) (В)-->
             51141300 <!--ВЕТРОЭЛЕКТРОСТАНЦИИ (КОМПЛЕКС) (В)-->
             51141200 <!--ЭЛЕКТРОСТАНЦИИ ТЕПЛОВЫЕ (К-С) (В)-->
-        </delete-objects>            
+        </objectsForDelete>            
     </scale>    
     <scale scale= "1 000 000">    
-        <file-path>1 000 000/</file-path>    
-        <file-name>L-37.txf L-38.txf L-39.txf M-37.txf M-38.txf M-39.txf N-37.txf N-38.txf N-39.txf O-37.txf O-38.txf O-39.txf</file-name>                
-        <delete-objects>
+        <filesPath>1 000 000/</filesPath>    
+        <filesNames>L-37.txf L-38.txf L-39.txf M-37.txf M-38.txf M-39.txf N-37.txf N-38.txf N-39.txf O-37.txf O-38.txf O-39.txf</filesNames>                
+        <objectsForDelete>
             <!--Слой  ГИДРОГРАФИЯ-->
             31134000 <!--ДОЖДЕВЫЕ ЯМЫ (Т*)-->
             31133000 <!--БАССЕЙНЫ (Т)-->
@@ -868,6 +868,6 @@
             <!--СУХИЕ РУСЛА РЕК (П)-->
             <!--Слой СИСТЕМНЫЙ-->
             <!--Все отображается-->
-        </delete-objects>        
+        </objectsForDelete>        
     </scale>
 </maps>

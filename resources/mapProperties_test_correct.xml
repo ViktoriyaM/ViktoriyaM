@@ -1,29 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<maps>
-                
-    <scale scale= "300 000">
-    
-        <file-path>300 000/</file-path>
-    
-        <file-name>M-37-08.txf</file-name>
-
-        <delete-objects>
+<maps>                
+    <scale scale= "300 000">    
+        <filesPath>300 000/</filesPath>    
+        <filesNames>M-37-08.txf</filesNames>
+        <objectsForDelete>
             <!--Слой АКВЕДУКИ-->
             32330000 <!--АКВЕДУКИ (Л*)-->      
                   
             51141200 <!--ЭЛЕКТРОСТАНЦИИ ТЕПЛОВЫЕ (К-С) (В)-->
-        </delete-objects>    
-        
-    </scale>
-    
-    <scale scale= "1 000 000">
-    
-        <file-path>1 000 000/</file-path>
-    
-        <file-name>L-37.txf</file-name>
-                
-        <delete-objects>
+        </objectsForDelete>            
+    </scale>    
+    <scale scale= "1 000 000">    
+        <filesPath>1 000 000/</filesPath>    
+        <filesNames>L-37.txf</filesNames>                
+        <objectsForDelete>
             <!--Слой  ГИДРОГРАФИЯ-->
             31134000 <!--ДОЖДЕВЫЕ ЯМЫ (Т*)-->
                         
@@ -38,8 +29,6 @@
             <!--СУХИЕ РУСЛА РЕК (П)-->
             <!--Слой СИСТЕМНЫЙ-->
             <!--Все отображается-->
-        </delete-objects>
-        
+        </objectsForDelete>        
     </scale>
-
 </maps>

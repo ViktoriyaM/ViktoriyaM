@@ -7,17 +7,15 @@ import java.util.LinkedHashSet;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import java.util.function.Supplier;
 
 public final class Algorithm extends AlgorithmAbstract
 {
-
 private static final Logger LOGGER = LogManager.getLogger(Algorithm.class.getName());
-
 Algorithm()
 {
     objects = new LinkedHashSet<>();
 }
-
 /**
  * Получает список объектов из сформированной конфигурации.
  *
@@ -27,20 +25,16 @@ Algorithm()
  *         false в противном случае
  */
 @Override
-boolean getObjects(Configuration configuration)
+boolean updateObjects(Configuration configuration)
 {
-    objects = configuration.getObjects();
-
+    objects = configuration.getObjectsForDelete();
     if (objects.isEmpty())
     {
         LOGGER.error("Error the get function is called before configuration of all: " + "objects is Empty: " + objects.isEmpty());
-
         return false;
     }
-
     return true;
 }
-
 /**
  * Выполняет чтение из входного буфера и запись в выходной буфер, полученных из {@link  FilesManager#next() }.
  *
@@ -50,25 +44,21 @@ boolean getObjects(Configuration configuration)
  *         false в противном случае
  */
 @Override
-boolean readWriteFile(FilesManager filesManager)
+boolean mapOverwriting(Supplier<Pair<BufferedReader, RandomAccessFile>> pair)
 {
-    String line;
-
-    Pair<BufferedReader, RandomAccessFile> pair = filesManager.next();
     if (pair == null)
     {
         LOGGER.error("Error in open file");
         return false;
     }
-
-    BufferedReader bufferedReader = pair.getKey();
-    RandomAccessFile randomAccessFile = pair.getValue();
-
+    BufferedReader bufferedReader = pair.get().getKey();
+    RandomAccessFile randomAccessFile = pair.get().getValue();
     try
     {
-        while ((line = bufferedReader.readLine()) != null)
+        String readLine;
+        while ((readLine = bufferedReader.readLine()) != null)
         {
-            calculation(randomAccessFile, line);
+            mapProcessing(randomAccessFile, readLine);
         }
     }
     catch (IOException ex)
@@ -76,31 +66,21 @@ boolean readWriteFile(FilesManager filesManager)
         LOGGER.error("Error write file " + ex);
         return false;
     }
-
-    if (!filesManager.close(bufferedReader, randomAccessFile))
-    {
-        return false;
-    }
-
     return true;
 }
-
 /**
  * Выполняет обработку файлов электронной карты, удаляя все объекты, соответствующие массиву из XML-документа.
  *
  * @param randomAccessFile поток для записи данных в файл с произвольным доступом
- * @param line строка, считанная из буфферизированного входного потока
- *
- * @return результат обработки файла
+ * @param readLine         строка, считанная из буфферизированного входного потока
  *
  * @throws IOException возникает исключение при ошибке записи в файл
  */
-private boolean calculation(RandomAccessFile randomAccessFile, String line) throws IOException
+@Override
+protected void mapProcessing(RandomAccessFile randomAccessFile, String readLine) throws IOException
 {
-    Matcher matcherObject = Pattern.compile("\\d+").matcher(line);
-    String lineDat = "";
-
-    if (line.matches(IDENTIFICATION_OBJECT))
+    Matcher matcherObject = Pattern.compile("\\d+").matcher(readLine);
+    if (readLine.matches(IDENTIFICATION_OBJECT))
     {
         if (matcherObject.find())
         {
@@ -113,48 +93,37 @@ private boolean calculation(RandomAccessFile randomAccessFile, String line) thro
             else
             {
                 isWrite = true;
-                randomAccessFile.write(line.getBytes());
-                randomAccessFile.writeBytes(System.getProperty("line.separator"));
             }
         }
     }
-    else
+    if (isWrite && !readLine.matches(IDENTIFICATION_END_FILE) && !readLine.matches(IDENTIFICATION_NUMBERS_OBJECTS))
     {
-        if (isWrite && !line.matches(IDENTIFICATION_END_FILE) && !line.matches(IDENTIFICATION_NUMBERS_OBJECTS))
-        {
-            randomAccessFile.write(line.getBytes());
-        }
-
-        if (line.matches(IDENTIFICATION_NUMBERS_OBJECTS))
-        {
-            if (matcherObject.find())
-            {
-                Matcher matcherDat = Pattern.compile("\\D+").matcher(line);
-
-                if (matcherDat.find())
-                {
-                    lineDat = matcherDat.group();
-                }
-                currentNumberObjects = Integer.parseInt(matcherObject.group());
-                randomAccessFile.write(lineDat.getBytes());
-                numberLineWithNumberObjects = randomAccessFile.getFilePointer();
-                randomAccessFile.writeBytes(System.getProperty("line.separator"));
-            }
-        }
-
-        if (line.matches(IDENTIFICATION_END_FILE))
-        {
-            randomAccessFile.write(line.getBytes());
-
-            int currentObjects = currentNumberObjects - currentNumberDeletedObjects;
-            randomAccessFile.seek(numberLineWithNumberObjects);
-            randomAccessFile.write(Integer.toString(currentObjects).getBytes());
-        }
-
+        randomAccessFile.write(readLine.getBytes());
         randomAccessFile.writeBytes(System.getProperty("line.separator"));
     }
-
-    return true;
+    if (readLine.matches(IDENTIFICATION_NUMBERS_OBJECTS))
+    {
+        if (matcherObject.find())
+        {
+            Matcher matcherDat = Pattern.compile("\\D+").matcher(readLine);
+            if (matcherDat.find())
+            {
+                String lineWithDat = matcherDat.group();
+                randomAccessFile.write(lineWithDat.getBytes());
+            }
+            currentNumberObjects = Integer.parseInt(matcherObject.group());
+            pointerLineWithNumberObjects = randomAccessFile.getFilePointer();
+            randomAccessFile.writeBytes(System.getProperty("line.separator"));
+        }
+    }
+    if (readLine.matches(IDENTIFICATION_END_FILE))
+    {
+        randomAccessFile.write(readLine.getBytes());
+        int currentObjects = currentNumberObjects - currentNumberDeletedObjects;
+        randomAccessFile.seek(pointerLineWithNumberObjects);
+        randomAccessFile.write(Integer.toString(currentObjects).getBytes());
+        randomAccessFile.writeBytes(System.getProperty("line.separator"));
+        currentNumberDeletedObjects = 0;
+    }
 }
-
 }
