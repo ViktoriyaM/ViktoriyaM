@@ -19,6 +19,6 @@ protected int currentNumberObjects = 0;
 protected int currentNumberDeletedObjects = 0;
 protected boolean isWrite = true;
 abstract boolean updateObjects(Configuration configuration);
-abstract boolean mapOverwriting(Supplier<Pair<BufferedReader, RandomAccessFile>> pair);
+abstract boolean mapOverwriting(Supplier<FilesManager.GenerateNext> pair) throws IOException;
 abstract protected void mapProcessing(RandomAccessFile randomAccessFile, String readLine) throws IOException;
 }

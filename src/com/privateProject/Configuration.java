@@ -118,7 +118,7 @@ protected Set<String> configurationObjectsForDelete(Document document, XPath xpa
         String objectsString = xpathExpression.evaluate(document, XPathConstants.STRING).toString();
         if (!("".equals(objectsString)))
         {
-            objects.addAll(Arrays.asList(objectsString.split("\n| ")));
+            objects.addAll(Arrays.asList(objectsString.split("\\s+")));
             objects.remove("");
         }
     }
@@ -148,8 +148,7 @@ protected Set<String> configurationFilesNames(Document document, XPath xpath, St
         String filesNamesString = xpathExpression.evaluate(document, XPathConstants.STRING).toString();
         if (!("".equals(filesNamesString)))
         {
-            filesNames.addAll(Arrays.asList(filesNamesString.split("\t|\n| ")));
-            filesNames.remove("");
+            filesNames.addAll(Arrays.asList(filesNamesString.split("\\s+")));
         }
     }
     catch (XPathExpressionException | NullPointerException ex)

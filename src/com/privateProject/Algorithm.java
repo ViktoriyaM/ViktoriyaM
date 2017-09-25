@@ -1,6 +1,5 @@
 package com.privateProject;
 
-import javafx.util.Pair;
 import java.io.*;
 import java.util.regex.*;
 import java.util.LinkedHashSet;
@@ -42,17 +41,19 @@ boolean updateObjects(Configuration configuration)
  *
  * @return true если файл карт обработан успешно
  *         false в противном случае
+ *
+ * @throws IOException
  */
 @Override
-boolean mapOverwriting(Supplier<Pair<BufferedReader, RandomAccessFile>> pair)
+boolean mapOverwriting(Supplier<FilesManager.GenerateNext> pair) throws IOException
 {
     if (pair == null)
     {
         LOGGER.error("Error in open file");
         return false;
     }
-    BufferedReader bufferedReader = pair.get().getKey();
-    RandomAccessFile randomAccessFile = pair.get().getValue();
+    BufferedReader bufferedReader = pair.get().getReader();
+    RandomAccessFile randomAccessFile = pair.get().getWriter();
     try
     {
         String readLine;
@@ -64,7 +65,7 @@ boolean mapOverwriting(Supplier<Pair<BufferedReader, RandomAccessFile>> pair)
     catch (IOException ex)
     {
         LOGGER.error("Error write file " + ex);
-        return false;
+        throw ex;
     }
     return true;
 }

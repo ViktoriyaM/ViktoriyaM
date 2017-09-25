@@ -48,21 +48,37 @@ boolean initializeDirectory(Configuration configuration)
                      + "filesPath is null: " + filesPath + "filesType is null: ");
         return false;
     }
+    Path directory = Paths.get(System.getProperty("user.dir"), folderName, filesPath);
     try
     {
-        Path directory = Paths.get(System.getProperty("user.dir"), folderName, filesPath);
         Path pathWriter = Files.createDirectories(directory);
-        Path pathReader = Paths.get(getClass().getClassLoader().getResource(filesPath).toURI());
-        setFilesPath(pathReader.toString(), pathWriter.toString());
-        DirectoryStream<Path> entries = Files.newDirectoryStream(pathReader);
-        for (Path entry : entries)
+        try
         {
-            filesNamesFromDirectory.add(entry.getFileName().toString());
+            Path pathReader = Paths.get(getClass().getClassLoader().getResource(filesPath).toURI());
+            setFilesPath(pathReader.toString(), pathWriter.toString());
+            try
+            {
+                DirectoryStream<Path> entries = Files.newDirectoryStream(pathReader);
+                for (Path entry : entries)
+                {
+                    filesNamesFromDirectory.add(entry.getFileName().toString());
+                }
+            }
+            catch (IOException | NullPointerException ex)
+            {
+                LOGGER.error("Error in newDirectoryStream from readers files directory" + ex);
+                return false;
+            }
+        }
+        catch (URISyntaxException ex)
+        {
+            LOGGER.error("Error in reader files directory " + ex);
+            return false;
         }
     }
-    catch (IOException | NullPointerException | URISyntaxException ex)
+    catch (IOException ex)
     {
-        LOGGER.error("Error files directory not found " + ex);
+        LOGGER.error("Error in writer files directory " + ex);
         return false;
     }
     return true;
@@ -106,9 +122,16 @@ boolean hasNext()
  *
  * @return буфер для чтения и записи
  */
-Pair<BufferedReader, RandomAccessFile> next()
-{    
-    StringBuilder newFullFileName = new StringBuilder(filesWriterPath);
+GenerateNext next()
+{
+    return new GenerateNext();
+}
+class GenerateNext
+{
+private BufferedReader bufferedReader = null;
+private RandomAccessFile randomAccessFile = null;
+GenerateNext()
+{
     String fileName = null;
     try
     {
@@ -117,22 +140,42 @@ Pair<BufferedReader, RandomAccessFile> next()
     catch (NoSuchElementException ex)
     {
         LOGGER.error("Error in iterator Files Names " + ex);
-        return pair;
     }
     String currentFullFileName = filesReaderPath + System.getProperty("file.separator") + fileName;
+    StringBuilder newFullFileName = new StringBuilder(filesWriterPath);
     newFullFileName.append(System.getProperty("file.separator")).append(fileName).insert(newFullFileName.indexOf(".txf"), "_optimal");
     setCurrentFullPath(currentFullFileName);
     try
     {
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(currentFullFileName), "windows-1251"));
-        RandomAccessFile randomAccessFile = new RandomAccessFile(newFullFileName.toString(), "rw");
+        bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(currentFullFileName), "windows-1251"));
+        randomAccessFile = new RandomAccessFile(newFullFileName.toString(), "rw");
         pair = new Pair<>(bufferedReader, randomAccessFile);
     }
-    catch (UnsupportedEncodingException | FileNotFoundException ex)
+    catch (UnsupportedEncodingException ex)
     {
         LOGGER.error("Error in encoding file " + ex);
     }
-    return pair;
+    catch (FileNotFoundException ex)
+    {
+        LOGGER.error("Error in file not found exception" + ex);
+    }
+}
+BufferedReader getReader()
+{
+    if (bufferedReader == null)
+    {
+        return null;
+    }
+    return bufferedReader;
+}
+RandomAccessFile getWriter()
+{
+    if (randomAccessFile == null)
+    {
+        return null;
+    }
+    return randomAccessFile;
+}
 }
 /**
  * Устанавливает путь или имя текущего обрабатываемого файла.
@@ -199,7 +242,7 @@ boolean close()
  */
 private void clearObjectsFilesManager()
 {
-    filesNamesFromDirectory = null;
+    filesNamesFromDirectory.clear();
     filesPath = null;
 }
 }

@@ -1,14 +1,10 @@
 package com.privateProject;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.net.URISyntaxException;
 import java.util.Scanner;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
-import javafx.util.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -18,6 +14,7 @@ private Set<Integer> selectedScales = null;
 private Algorithm algorithm = null;
 private FilesManager filesManager = null;
 private Configuration configuration = null;
+private Scanner inputLine = null;
 private static final Logger LOGGER = LogManager.getLogger(Manager.class.getName());
 Manager()
 {
@@ -25,6 +22,7 @@ Manager()
     algorithm = new Algorithm();
     configuration = new Configuration();
     filesManager = new FilesManager();
+    inputLine = new Scanner(System.in);
 }
 /**
  * Вызывает методы для открытия XML-документа {@link Configuration#initialize()},
@@ -74,6 +72,7 @@ public void managing()
         }
     }
     while (!QUITE.equals(selectedScale));
+    inputLine.close();
     LOGGER.info("Completion of the application");
 }
 /**
@@ -86,8 +85,7 @@ public void managing()
  */
 @Override
 public String showMenu(final List<String> configuredScales)
-{
-    Scanner inputLine = new Scanner(System.in);
+{    
     System.out.println("Введите номер, соответствующий масштабу карты, для удаления объектов:");
     for (int i = 0; i < configuredScales.size(); i++)
     {
@@ -191,18 +189,29 @@ public boolean controlAlgorithm(final String selectedScale)
     }
     while (filesManager.hasNext())
     {
-        status = algorithm.mapOverwriting(filesManager::next);
-        if (!status)
+        try
         {
-            System.out.println("Файл карты не обработан: " + filesManager.getCurrentFullPath());
+            status = algorithm.mapOverwriting(filesManager::next);
+            if (!status)
+            {
+                System.out.println("Файл карты не обработан: " + filesManager.getCurrentFullPath());
+            }
+            else
+            {
+                System.out.println("Файл карты: " + filesManager.getCurrentFullPath() + " обработан");
+                if (!filesManager.close())
+                {
+                    System.out.println("Файл карты: " + filesManager.getCurrentFullPath() + " закрыт с ошибкой");
+                }
+            }
         }
-        else
+        catch (IOException ex)
         {
-            System.out.println("Файл карты: " + filesManager.getCurrentFullPath() + " обработан");
-        }
-        if (!filesManager.close())
-        {
-            System.out.println("Файл карты: " + filesManager.getCurrentFullPath() + " закрыт с ошибкой");
+            System.out.println("Файл карты: " + filesManager.getCurrentFullPath() + " обработан с ошибкой");
+            if (!filesManager.close())
+            {
+                System.out.println("Файл карты: " + filesManager.getCurrentFullPath() + " закрыт с ошибкой");
+            }
         }
     }
     return true;
