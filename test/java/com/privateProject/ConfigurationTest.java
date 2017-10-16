@@ -129,7 +129,7 @@ public void testConfigurationFilesNames()
 {
     System.out.println("configurationScaleValues");
     String scale = "1 000 000";
-    LinkedHashSet<String> expectedSet = new LinkedHashSet();
+    LinkedHashSet<String> expectedSet = new LinkedHashSet<>();
 //Test without Files Names with good initialize
     assertEquals(true, configuration.initialize("mapProperties_without_scales.xml"));
     assertEquals(expectedSet, configuration.getFilesNames());

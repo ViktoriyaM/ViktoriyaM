@@ -47,17 +47,18 @@ public void tearDown()
 @Rule
 public ExpectedException expectedException = ExpectedException.none();
 @Test
-public void testGetObjects()
+public void testUpdateObjects()
 {
     System.out.println("getObjects");
-    String scale = "200 000";
 //Test without before configuration All Parameters
     assertEquals(false, algorithm.updateObjects(configuration));
     tearDown();
     setUp();
 //Test after configuration All Parameters    
     expectedException.expect(NoSuchElementException.class);
-    manager.managing();
+    String scale = "1 000 000";
+    String fileName = "mapProperties_test_correct.xml";
+    configuration.initialize(fileName);
     assertEquals(true, manager.controlAlgorithm(scale));
     assertEquals(true, algorithm.updateObjects(configuration));
 }

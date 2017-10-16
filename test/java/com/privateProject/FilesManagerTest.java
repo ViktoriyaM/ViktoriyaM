@@ -78,7 +78,7 @@ public void testCheckingFilesInDirectory()
     scale = "800 000";
     assertEquals(true, configuration.initialize("mapProperties_error_files_path.xml"));
     assertEquals(true, configuration.configurationAllParameters(scale));
-    assertEquals(true, filesManager.initializeDirectory(configuration));
+    assertEquals(false, filesManager.initializeDirectory(configuration));
     assertEquals(false, filesManager.checkingFilesInDirectory());
 }
 /**
